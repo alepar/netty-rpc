@@ -61,6 +61,12 @@ public class NettyRpcServer implements RpcServer {
 
             e.getChannel().write(new InvocationResponse(returnValue));
         }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+            // TODO notify client
+            e.getChannel().close();
+        }
     }
 
 }

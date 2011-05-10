@@ -10,8 +10,9 @@ import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static ru.alepar.rpc.netty.Config.BIND_ADDRESS;
+import static ru.alepar.rpc.netty.TestSupport.executeWithTimeout;
 
 @RunWith(JMock.class)
 public class NettyRpcServerTest {
@@ -30,10 +31,15 @@ public class NettyRpcServerTest {
         server.addImplementation(NoParamsVoidReturn.class, impl);
 
         RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
+        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
 
         try {
-            proxy.go();
+            executeWithTimeout(new Runnable() {
+                @Override
+                public void run() {
+                    proxy.go();
+                }
+            });
         } finally {
             client.shutdown();
             server.shutdown();
@@ -42,7 +48,7 @@ public class NettyRpcServerTest {
 
     @Test
     public void returnedObjectIsPassedToClientSide() throws Exception {
-        final NoParamsIntReturn impl = mockery.mock(NoParamsIntReturn.class);
+        final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
         final Integer returnValue = 5;
 
         mockery.checking(new Expectations() {{
@@ -51,13 +57,108 @@ public class NettyRpcServerTest {
         }});
 
         RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(NoParamsIntReturn.class, impl);
+        server.addImplementation(NoParamsIntegerReturn.class, impl);
 
         RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        NoParamsIntReturn proxy = client.getImplementation(NoParamsIntReturn.class);
+        final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
 
         try {
-            assertThat(proxy.go(), equalTo(returnValue));
+            executeWithTimeout(new Runnable() {
+                @Override
+                public void run() {
+                    assertThat(proxy.go(), equalTo(returnValue));
+                }
+            });
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void subsequentCallsWork() throws Exception {
+        final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
+        final Integer returnValueOne = 5;
+        final Integer returnValueTwo = 10;
+
+        mockery.checking(new Expectations() {{
+            one(impl).go();
+            will(returnValue(returnValueOne));
+            one(impl).go();
+            will(returnValue(returnValueTwo));
+        }});
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(NoParamsIntegerReturn.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
+
+        try {
+            executeWithTimeout(new Runnable() {
+                @Override
+                public void run() {
+                    assertThat(proxy.go(), equalTo(returnValueOne));
+                    assertThat(proxy.go(), equalTo(returnValueTwo));
+                }
+            });
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void methodsWithPrimitiveReturnTypeWork() throws Exception {
+        final NoParamsPrimitiveReturn impl = mockery.mock(NoParamsPrimitiveReturn.class);
+        final long returnValue = 5;
+
+        mockery.checking(new Expectations() {{
+            one(impl).go();
+            will(returnValue(returnValue));
+        }});
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(NoParamsPrimitiveReturn.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final NoParamsPrimitiveReturn proxy = client.getImplementation(NoParamsPrimitiveReturn.class);
+
+        try {
+            executeWithTimeout(new Runnable() {
+                @Override
+                public void run() {
+                    assertThat(proxy.go(), equalTo(returnValue));
+                }
+            });
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void methodParametersArePassedToRemoteSideProperly() throws Exception {
+        final IntegerParam impl = mockery.mock(IntegerParam.class);
+        final Integer param = 5;
+
+        mockery.checking(new Expectations() {{
+            one(impl).go(with(equalTo(param)));
+        }});
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(IntegerParam.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final IntegerParam proxy = client.getImplementation(IntegerParam.class);
+
+        try {
+            executeWithTimeout(new Runnable() {
+                @Override
+                public void run() {
+                    proxy.go(param);
+                }
+            });
         } finally {
             client.shutdown();
             server.shutdown();
@@ -67,7 +168,13 @@ public class NettyRpcServerTest {
     private interface NoParamsVoidReturn {
         void go();
     }
-    private interface NoParamsIntReturn {
+    private interface NoParamsIntegerReturn {
         Integer go();
+    }
+    private interface NoParamsPrimitiveReturn {
+        long go();
+    }
+    private interface IntegerParam {
+        void go(Integer i);
     }
 }
