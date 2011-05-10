@@ -1,18 +1,18 @@
 <component name="libraryTable">
   <library name="junit">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/junit/junit-dep-4.4.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/junit/hamcrest-library-1.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/junit/hamcrest-core-1.1.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/junit/junit-4.8.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/junit/jmock-2.5.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/junit/jmock-junit4-2.5.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/junit/junit-4.8.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/junit/junit-dep-4.8.2.jar!/" />
     </CLASSES>
     <JAVADOC>
       <root url="jar://$PROJECT_DIR$/lib/junit/jmock-2.5.1-javadoc.zip!/" />
     </JAVADOC>
     <SOURCES>
-      <root url="jar://$PROJECT_DIR$/lib/junit/junit-4.8.1-src.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/junit/junit-4.8.2-src.jar!/" />
     </SOURCES>
   </library>
 </component>
