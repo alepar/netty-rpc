@@ -8,11 +8,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="rpc" />
-    <orderEntry type="library" scope="TEST" name="junit" level="project" />
-    <orderEntry type="library" name="logging" level="project" />
-    <orderEntry type="library" name="netty" level="project" />
   </component>
 </module>
 
