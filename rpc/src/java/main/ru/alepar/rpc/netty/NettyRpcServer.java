@@ -8,6 +8,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -80,9 +81,9 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            // TODO notify client
-            e.getChannel().close();
             log.debug("NettyRpcServer caught exception", e.getCause());
+            e.getChannel().write(new InvocationResponse(null, new TransportException(e.getCause()))) //try to pass exception to client
+                    .addListener(ChannelFutureListener.CLOSE);  //and close connection on completion
         }
     }
 

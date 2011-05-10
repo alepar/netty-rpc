@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
 
+import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -191,14 +192,13 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT) @Ignore
-    public void choosesOneOfOverloadedMethodsBasedOnCompileTimeTypesNotOnRuntimeTypes() throws Exception {
+    @Test(timeout = TIMEOUT)
+    public void choosesOverloadedMethodByCompileTimeTypesAsOpposedToRuntimeTypes() throws Exception {
         final OverloadedString impl = mockery.mock(OverloadedString.class);
         final String s = "some string";
-        final Object o = new Object();
 
         mockery.checking(new Expectations() {{
-            one(impl).go(with(any(Object.class)));
+            one(impl).go(with(any(Serializable.class)));
         }});
 
         RpcServer server = new NettyRpcServer(BIND_ADDRESS);
@@ -208,7 +208,7 @@ public class NettyRpcServerTest {
         final OverloadedString proxy = client.getImplementation(OverloadedString.class);
 
         try {
-            proxy.go((Object) s);
+            proxy.go((Serializable) s);
         } finally {
             client.shutdown();
             server.shutdown();
@@ -235,6 +235,6 @@ public class NettyRpcServerTest {
     }
     private interface OverloadedString {
         void go(String s);
-        void go(Object s);
+        void go(Serializable s);
     }
 }
