@@ -44,5 +44,9 @@ public class TestSupport {
                 error = e;
             }
         }
+
+        public Throwable getError() {
+            return error;
+        }
     }
 }

@@ -110,6 +110,12 @@ public class NettyRpcClient implements RpcClient {
             response = (InvocationResponse) e.getMessage();
             latch.countDown();
         }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+            response = new InvocationResponse(null, new TransportException(e.getCause()));
+            latch.countDown();
+        }
     }
 
 }

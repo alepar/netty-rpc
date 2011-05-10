@@ -9,7 +9,9 @@ import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.ProtocolException;
+import ru.alepar.rpc.exception.TransportException;
 
+import javax.swing.text.html.HTML;
 import java.io.Serializable;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -253,6 +255,46 @@ public class NettyRpcServerTest {
         }
     }
 
+    @Test(timeout = TIMEOUT, expected = TransportException.class)
+    public void throwsTransportExceptionIfConnectionIsAbruptlyTerminated() throws Throwable {
+        final InfinteWaiter impl = new InfinteWaiter() {
+            @SuppressWarnings({"InfiniteLoopStatement"})
+            @Override
+            public void hang() {
+                while(true) {
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+        };
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(InfinteWaiter.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final InfinteWaiter proxy = client.getImplementation(InfinteWaiter.class);
+
+        try {
+            TestSupport.ErrorCatchingRunnable target = new TestSupport.ErrorCatchingRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    proxy.hang();
+                }
+            });
+            Thread thread = new Thread(target);
+            thread.start();
+            server.shutdown();
+            thread.join();
+            if (target.getError() != null) {
+                throw target.getError();
+            }
+        } finally {
+            client.shutdown();
+        }
+    }
+
     private interface NoParamsVoidReturn {
         void go();
     }
@@ -278,5 +320,8 @@ public class NettyRpcServerTest {
     private interface NonSerializable {
         void param(String s, Object o);
         Object ret();
+    }
+    private interface InfinteWaiter {
+        void hang();
     }
 }
