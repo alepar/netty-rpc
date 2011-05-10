@@ -23,7 +23,7 @@ public class NettyRpcClient implements RpcClient {
     private final ClientBootstrap bootstrap;
 
     private CountDownLatch latch;
-    private Serializable returnValue;
+    private InvocationResponse response;
 
     public NettyRpcClient(InetSocketAddress remoteAddress) {
         bootstrap = new ClientBootstrap(
@@ -67,25 +67,28 @@ public class NettyRpcClient implements RpcClient {
             latch = new CountDownLatch(1);
             channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
             latch.await();
-            return returnValue;
+            if (response.exc != null) {
+                throw response.exc;
+            }
+            return response.returnValue;
         }
     }
 
-    @SuppressWarnings({"SuspiciousSystemArraycopy"})
     private static Serializable[] toSerializable(Object[] args) {
         if(args == null) {
             return null;
         }
         Serializable[] result = new Serializable[args.length];
-        System.arraycopy(args, 0, result, 0, args.length);
+        for (int i = 0; i < args.length; i++) {
+            result[i] = (Serializable) args[i];
+        }
         return result;
     }
 
     private class RpcHandler extends SimpleChannelHandler {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            InvocationResponse msg = (InvocationResponse) e.getMessage();
-            returnValue = msg.returnValue;
+            response = (InvocationResponse) e.getMessage();
             latch.countDown();
         }
     }
