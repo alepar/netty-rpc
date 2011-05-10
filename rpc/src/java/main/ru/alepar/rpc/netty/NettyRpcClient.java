@@ -1,5 +1,6 @@
 package ru.alepar.rpc.netty;
 
+import ch.qos.logback.classic.pattern.MethodOfCallerConverter;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -66,18 +67,30 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             latch = new CountDownLatch(1);
-            Serializable[] serializables;
-            try {
-                serializables = toSerializable(args);
-            } catch (RuntimeException e) {
-                throw new ProtocolException("could not rpc method: " + method, e);
-            }
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), serializables, method.getParameterTypes()));
+            validateMethod(method);
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
             latch.await();
             if (response.exc != null) {
                 throw response.exc;
             }
             return response.returnValue;
+        }
+
+        private void validateMethod(Method method) {
+            try {
+                for (int i = 0; i < method.getParameterTypes().length; i++) {
+                    Class<?> clazz = method.getParameterTypes()[i];
+                    if (!clazz.isPrimitive() && !Serializable.class.isAssignableFrom(clazz)) {
+                        throw new RuntimeException("param #" + (i + 1) + "(" + clazz.getName() + ") is not serializable");
+                    }
+                }
+                Class<?> clazz = method.getReturnType();
+                if(!clazz.isPrimitive() && !Serializable.class.isAssignableFrom(clazz)) {
+                    throw new RuntimeException("return type (" + clazz.getName() + ") is not serializable");
+                }
+            } catch (RuntimeException e) {
+                throw new ProtocolException("cannot rpc method: " + method, e);
+            }
         }
     }
 
@@ -87,11 +100,7 @@ public class NettyRpcClient implements RpcClient {
         }
         Serializable[] result = new Serializable[args.length];
         for (int i = 0; i < args.length; i++) {
-            try {
-                result[i] = (Serializable) args[i];
-            } catch (ClassCastException e) {
-                throw new RuntimeException("could not serialize param #" + (i+1), e);
-            }
+            result[i] = (Serializable) args[i];
         }
         return result;
     }

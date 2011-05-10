@@ -73,12 +73,8 @@ public class NettyRpcServer implements RpcServer {
                     method = clazz.getMethod(msg.methodName);
                     returnValue = method.invoke(impl);
                 }
-                try {
-                    Serializable safeReturnValue = (Serializable) returnValue;
-                    e.getChannel().write(new InvocationResponse(safeReturnValue, null));
-                } catch (Exception exc) {
-                    e.getChannel().write(new InvocationResponse(null, new ProtocolException("could not serialize returnValue for method: " + method, exc)));
-                }
+                Serializable safeReturnValue = (Serializable) returnValue;
+                e.getChannel().write(new InvocationResponse(safeReturnValue, null));
             } catch (InvocationTargetException exc) {
                 e.getChannel().write(new InvocationResponse(null, exc.getCause()));
             } catch (Throwable t) {
