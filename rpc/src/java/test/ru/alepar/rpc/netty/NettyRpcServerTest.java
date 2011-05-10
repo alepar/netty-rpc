@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.exception.ProtocolException;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
@@ -215,6 +216,47 @@ public class NettyRpcServerTest {
         }
     }
 
+    @Test(timeout = TIMEOUT, expected = ProtocolException.class)
+    public void throwsProtocolExceptionIfCannotSerializeParams() throws Exception {
+        final NonSerializable impl = mockery.mock(NonSerializable.class);
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(NonSerializable.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final NonSerializable proxy = client.getImplementation(NonSerializable.class);
+
+        try {
+            proxy.param("", new Object());
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(timeout = TIMEOUT, expected = ProtocolException.class)
+    public void throwsProtocolExceptionIfCannotSerializeReturnValue() throws Exception {
+        final NonSerializable impl = mockery.mock(NonSerializable.class);
+
+        mockery.checking(new Expectations() {{
+            allowing(impl).ret();
+            will(returnValue(new Object()));
+        }});
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(NonSerializable.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final NonSerializable proxy = client.getImplementation(NonSerializable.class);
+
+        try {
+            proxy.ret();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
     private interface NoParamsVoidReturn {
         void go();
     }
@@ -234,7 +276,11 @@ public class NettyRpcServerTest {
         void go() throws IllegalStateException;
     }
     private interface OverloadedString {
-        void go(String s);
+        void go(String s); // though unused, is vital for correctnes of corresponding unit test
         void go(Serializable s);
+    }
+    private interface NonSerializable {
+        void param(String s, Object o);
+        Object ret();
     }
 }

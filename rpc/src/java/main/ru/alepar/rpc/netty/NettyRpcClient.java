@@ -6,6 +6,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import ru.alepar.rpc.RpcClient;
+import ru.alepar.rpc.exception.ProtocolException;
 import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
@@ -65,7 +66,13 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             latch = new CountDownLatch(1);
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
+            Serializable[] serializables;
+            try {
+                serializables = toSerializable(args);
+            } catch (RuntimeException e) {
+                throw new ProtocolException("could not rpc method: " + method, e);
+            }
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), serializables, method.getParameterTypes()));
             latch.await();
             if (response.exc != null) {
                 throw response.exc;
@@ -80,7 +87,11 @@ public class NettyRpcClient implements RpcClient {
         }
         Serializable[] result = new Serializable[args.length];
         for (int i = 0; i < args.length; i++) {
-            result[i] = (Serializable) args[i];
+            try {
+                result[i] = (Serializable) args[i];
+            } catch (ClassCastException e) {
+                throw new RuntimeException("could not serialize param #" + (i+1), e);
+            }
         }
         return result;
     }

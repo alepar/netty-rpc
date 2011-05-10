@@ -8,6 +8,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.exception.ProtocolException;
 import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
@@ -63,15 +64,21 @@ public class NettyRpcServer implements RpcServer {
             Object impl = implementations.get(clazz);
 
             try {
-                Serializable returnValue;
+                Object returnValue;
+                Method method;
                 if (msg.args != null) {
-                    Method method = clazz.getMethod(msg.methodName, msg.types);
-                    returnValue = (Serializable) method.invoke(impl, msg.args);
+                    method = clazz.getMethod(msg.methodName, msg.types);
+                    returnValue = method.invoke(impl, msg.args);
                 } else {
-                    Method method = clazz.getMethod(msg.methodName);
-                    returnValue = (Serializable) method.invoke(impl);
+                    method = clazz.getMethod(msg.methodName);
+                    returnValue = method.invoke(impl);
                 }
-                e.getChannel().write(new InvocationResponse(returnValue, null));
+                try {
+                    Serializable safeReturnValue = (Serializable) returnValue;
+                    e.getChannel().write(new InvocationResponse(safeReturnValue, null));
+                } catch (Exception exc) {
+                    e.getChannel().write(new InvocationResponse(null, new ProtocolException("could not serialize returnValue for method: " + method, exc)));
+                }
             } catch (InvocationTargetException exc) {
                 e.getChannel().write(new InvocationResponse(null, exc.getCause()));
             } catch (Throwable t) {
