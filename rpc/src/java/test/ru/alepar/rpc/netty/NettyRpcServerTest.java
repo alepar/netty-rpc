@@ -4,7 +4,6 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
@@ -12,13 +11,10 @@ import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.ProtocolException;
 
 import java.io.Serializable;
-import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static ru.alepar.rpc.netty.Config.BIND_ADDRESS;
-import static ru.alepar.rpc.netty.Config.TIMEOUT;
-import static ru.alepar.rpc.netty.TestSupport.executeWithTimeout;
+import static org.junit.Assert.assertThat;
+import static ru.alepar.rpc.netty.Config.*;
 
 @RunWith(JMock.class)
 public class NettyRpcServerTest {

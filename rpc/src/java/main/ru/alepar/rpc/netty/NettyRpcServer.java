@@ -8,7 +8,6 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.RpcServer;
-import ru.alepar.rpc.exception.ProtocolException;
 import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;

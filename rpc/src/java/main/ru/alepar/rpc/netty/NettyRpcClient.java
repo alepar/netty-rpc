@@ -1,6 +1,5 @@
 package ru.alepar.rpc.netty;
 
-import ch.qos.logback.classic.pattern.MethodOfCallerConverter;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
