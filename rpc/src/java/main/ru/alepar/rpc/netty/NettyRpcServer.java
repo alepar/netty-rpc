@@ -56,8 +56,8 @@ public class NettyRpcServer implements RpcServer {
             Class clazz = Class.forName(msg.className);
             Object impl = implementations.get(clazz);
 
-            Method method = clazz.getMethod(msg.methodName);
-            Serializable returnValue = (Serializable) method.invoke(impl);
+            Method method = clazz.getMethod(msg.methodName, msg.types);
+            Serializable returnValue = (Serializable) method.invoke(impl, msg.args);
 
             e.getChannel().write(new InvocationResponse(returnValue));
         }

@@ -65,10 +65,20 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             latch = new CountDownLatch(1);
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName()));
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
             latch.await();
             return returnValue;
         }
+    }
+
+    @SuppressWarnings({"SuspiciousSystemArraycopy"})
+    private static Serializable[] toSerializable(Object[] args) {
+        if(args == null) {
+            return null;
+        }
+        Serializable[] result = new Serializable[args.length];
+        System.arraycopy(args, 0, result, 0, args.length);
+        return result;
     }
 
     private class RpcHandler extends SimpleChannelHandler {
