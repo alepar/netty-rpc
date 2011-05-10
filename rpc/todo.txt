@@ -2,3 +2,7 @@
  - smart remote exception wrap\unwrap
  - validate interface on registering it in rpc client/server
  - check if interface is registered on server side before returning client proxy
+
+ - implementation factory on server side (client-dedicated server-side implementations)
+ - authentication
+ - compression
