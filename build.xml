@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="vuzetty" default="all">
+  
+  
+  <property file="build.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="128m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/.pyc/**"/>
+    <exclude name="**/.pyo/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/*.lib/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/.bundle/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.zip"/>
+    <include name="*.war"/>
+    <include name="*.egg"/>
+    <include name="*.ear"/>
+    <include name="*.swc"/>
+    <include name="*.jar"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <include name="**/?*.properties"/>
+    <include name="**/?*.xml"/>
+    <include name="**/?*.gif"/>
+    <include name="**/?*.png"/>
+    <include name="**/?*.jpeg"/>
+    <include name="**/?*.jpg"/>
+    <include name="**/?*.html"/>
+    <include name="**/?*.dtd"/>
+    <include name="**/?*.tld"/>
+    <include name="**/?*.ftl"/>
+  </patternset>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.junit.classpath">
+    <pathelement location="${basedir}/lib/junit/hamcrest-core-1.1.jar"/>
+    <pathelement location="${basedir}/lib/junit/hamcrest-library-1.1.jar"/>
+    <pathelement location="${basedir}/lib/junit/jmock-2.5.1.jar"/>
+    <pathelement location="${basedir}/lib/junit/jmock-junit4-2.5.1.jar"/>
+    <pathelement location="${basedir}/lib/junit/junit-4.8.2.jar"/>
+    <pathelement location="${basedir}/lib/junit/junit-dep-4.8.2.jar"/>
+  </path>
+  
+  <path id="library.logging.classpath">
+    <pathelement location="${basedir}/lib/logging/logback-classic-0.9.28.jar"/>
+    <pathelement location="${basedir}/lib/logging/logback-core-0.9.28.jar"/>
+    <pathelement location="${basedir}/lib/logging/slf4j-api-1.6.1.jar"/>
+  </path>
+  
+  <path id="library.netty.classpath">
+    <pathelement location="${basedir}/lib/netty/netty-3.2.4.Final.jar"/>
+  </path>
+  
+  
+  <!-- Global Libraries -->
+  
+  
+  <!-- Application Server Libraries -->
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module rpc -->
+  
+  <dirname property="module.rpc.basedir" file="${ant.file}"/>
+  
+  
+  
+  <property name="compiler.args.rpc" value="${compiler.args}"/>
+  
+  <property name="rpc.output.dir" value="${module.rpc.basedir}/out/production/rpc"/>
+  <property name="rpc.testoutput.dir" value="${module.rpc.basedir}/out/test/rpc"/>
+  
+  <path id="rpc.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="rpc.module.production.classpath">
+    <path refid="library.netty.classpath"/>
+    <path refid="library.logging.classpath"/>
+  </path>
+  
+  <path id="rpc.runtime.production.module.classpath">
+    <pathelement location="${rpc.output.dir}"/>
+    <path refid="library.netty.classpath"/>
+    <path refid="library.logging.classpath"/>
+  </path>
+  
+  <path id="rpc.module.classpath">
+    <pathelement location="${rpc.output.dir}"/>
+    <path refid="library.netty.classpath"/>
+    <path refid="library.junit.classpath"/>
+    <path refid="library.logging.classpath"/>
+  </path>
+  
+  <path id="rpc.runtime.module.classpath">
+    <pathelement location="${rpc.testoutput.dir}"/>
+    <pathelement location="${rpc.output.dir}"/>
+    <path refid="library.netty.classpath"/>
+    <path refid="library.junit.classpath"/>
+    <path refid="library.logging.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.rpc">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.rpc">
+    <patternset refid="excluded.from.module.rpc"/>
+  </patternset>
+  
+  <path id="rpc.module.sourcepath">
+    <dirset dir="${module.rpc.basedir}/rpc">
+      <include name="src/java/main"/>
+    </dirset>
+  </path>
+  
+  <path id="rpc.module.test.sourcepath">
+    <dirset dir="${module.rpc.basedir}/rpc">
+      <include name="src/java/test"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.rpc" depends="compile.module.rpc.production,compile.module.rpc.tests" description="Compile module rpc"/>
+  
+  <target name="compile.module.rpc.production" description="Compile module rpc; production classes">
+    <mkdir dir="${rpc.output.dir}"/>
+    <javac destdir="${rpc.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.rpc}"/>
+      <bootclasspath refid="rpc.module.bootclasspath"/>
+      <classpath refid="rpc.module.production.classpath"/>
+      <src refid="rpc.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.rpc"/>
+    </javac>
+    
+    <copy todir="${rpc.output.dir}">
+      <fileset dir="${module.rpc.basedir}/rpc/src/java/main">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.rpc.tests" depends="compile.module.rpc.production" description="compile module rpc; test classes" unless="skip.tests">
+    <mkdir dir="${rpc.testoutput.dir}"/>
+    <javac destdir="${rpc.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.rpc}"/>
+      <bootclasspath refid="rpc.module.bootclasspath"/>
+      <classpath refid="rpc.module.classpath"/>
+      <src refid="rpc.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.rpc"/>
+    </javac>
+    
+    <copy todir="${rpc.testoutput.dir}">
+      <fileset dir="${module.rpc.basedir}/rpc/src/java/test">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.rpc" description="cleanup module">
+    <delete dir="${rpc.output.dir}"/>
+    <delete dir="${rpc.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.rpc" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.rpc" description="build all modules"/>
+  
+  <target name="init.artifacts">
+    <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
+    <property name="artifact.output.netty-rpc" value="${basedir}/out/artifacts/netty-rpc"/>
+    <mkdir dir="${artifacts.temp.dir}"/>
+    <property name="temp.jar.path.netty-rpc.jar" value="${artifacts.temp.dir}/netty-rpc.jar"/>
+  </target>
+  
+  <target name="artifact.netty-rpc" depends="init.artifacts, compile.module.rpc" description="Build &apos;netty-rpc&apos; artifact">
+    <property name="artifact.temp.output.netty-rpc" value="${artifacts.temp.dir}/netty_rpc"/>
+    <mkdir dir="${artifact.temp.output.netty-rpc}"/>
+    <jar destfile="${temp.jar.path.netty-rpc.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset dir="${rpc.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.netty-rpc.jar}" tofile="${artifact.temp.output.netty-rpc}/netty-rpc.jar"/>
+  </target>
+  
+  <target name="build.all.artifacts" depends="artifact.netty-rpc" description="Build all artifacts">
+    <mkdir dir="${artifact.output.netty-rpc}"/>
+    <copy todir="${artifact.output.netty-rpc}">
+      <fileset dir="${artifact.temp.output.netty-rpc}"/>
+    </copy>
+    
+    <!-- Delete temporary files -->
+    <delete dir="${artifacts.temp.dir}"/>
+  </target>
+  
+  <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
+</project>
