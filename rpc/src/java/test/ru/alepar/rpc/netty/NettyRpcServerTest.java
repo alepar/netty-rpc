@@ -9,7 +9,6 @@ import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.*;
-import sun.org.mozilla.javascript.internal.JavaScriptException;
 
 import java.io.Serializable;
 
