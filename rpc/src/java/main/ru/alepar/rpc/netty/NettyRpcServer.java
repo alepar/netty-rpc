@@ -67,7 +67,7 @@ public class NettyRpcServer implements RpcServer {
                 Method method;
                 if (msg.args != null) {
                     method = clazz.getMethod(msg.methodName, msg.types);
-                    returnValue = method.invoke(impl, msg.args);
+                    returnValue = method.invoke(impl, (Object[]) msg.args);
                 } else {
                     method = clazz.getMethod(msg.methodName);
                     returnValue = method.invoke(impl);
