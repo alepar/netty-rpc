@@ -1,5 +1,4 @@
  - thread-safe client proxies (that will be a blast ;-)
- - smart remote exception wrap\unwrap
  - validate interface on registering it in rpc client/server
  - check if interface is registered on server side before returning client proxy
 

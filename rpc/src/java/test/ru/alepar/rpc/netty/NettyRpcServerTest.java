@@ -8,10 +8,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
-import ru.alepar.rpc.exception.ProtocolException;
-import ru.alepar.rpc.exception.TransportException;
+import ru.alepar.rpc.exception.*;
+import sun.org.mozilla.javascript.internal.JavaScriptException;
 
-import javax.swing.text.html.HTML;
 import java.io.Serializable;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -295,6 +294,98 @@ public class NettyRpcServerTest {
         }
     }
 
+    @Test(timeout = TIMEOUT, expected = IllegalAccessException.class)
+    public void javaLangExceptionsAreNotWrappedInRemoteException() throws Throwable {
+        final ThrowableThrower impl = new ThrowableThrower() {
+            @Override
+            public void go() throws Throwable {
+                throw new IllegalAccessException("some java.lang exception");
+            }
+        };
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(ThrowableThrower.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+
+        try {
+            proxy.go();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(timeout = TIMEOUT, expected = SafeRuntimeException.class)
+    public void safeRuntimeExceptionsAreNotWrappedInRemoteException() throws Throwable {
+        final ThrowableThrower impl = new ThrowableThrower() {
+            @Override
+            public void go() throws Throwable {
+                throw new SafeRuntimeException();
+            }
+        };
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(ThrowableThrower.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+
+        try {
+            proxy.go();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(timeout = TIMEOUT, expected = SafeCheckedException.class)
+    public void safeCheckedExceptionsAreNotWrappedInRemoteException() throws Throwable {
+        final ThrowableThrower impl = new ThrowableThrower() {
+            @Override
+            public void go() throws Throwable {
+                throw new SafeCheckedException();
+            }
+        };
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(ThrowableThrower.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+
+        try {
+            proxy.go();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(timeout = TIMEOUT, expected = RemoteException.class)
+    public void arbitraryExceptionsAreWrappedInRemoteException() throws Throwable {
+        final ThrowableThrower impl = new ThrowableThrower() {
+            @Override
+            public void go() throws Throwable {
+                throw new MyException();
+            }
+        };
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addImplementation(ThrowableThrower.class, impl);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+
+        try {
+            proxy.go();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
     private interface NoParamsVoidReturn {
         void go();
     }
@@ -324,4 +415,8 @@ public class NettyRpcServerTest {
     private interface InfinteWaiter {
         void hang();
     }
+    private interface ThrowableThrower {
+        void go() throws Throwable;
+    }
+    private static class MyException extends Exception { }
 }

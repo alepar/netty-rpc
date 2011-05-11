@@ -29,6 +29,13 @@
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
+  <component name="TestDoxConfiguration">
+    <option name="createTestIfMissing" value="true" />
+    <option name="deletePackageOccurrences" value="true" />
+    <option name="testMethodAnnotation" value="@Test" />
+    <option name="testMethodPrefix" />
+    <option name="usingAnnotations" value="true" />
+  </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
 </project>
 

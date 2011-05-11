@@ -6,7 +6,7 @@ package ru.alepar.rpc.exception;
  * <br/>
  * When you get this exception it is pointless to retry rpc calls - they will always fail.
  */
-public class ProtocolException extends RuntimeException {
+public class ProtocolException extends SafeRuntimeException {
 
     public ProtocolException() {
     }

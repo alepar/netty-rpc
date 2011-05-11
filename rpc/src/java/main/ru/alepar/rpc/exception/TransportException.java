@@ -6,7 +6,7 @@ package ru.alepar.rpc.exception;
  * <br/>
  * When you get this exception you will probably want to retry rpc call for the sake of reliability
  */
-public class TransportException extends RuntimeException {
+public class TransportException extends SafeRuntimeException {
     public TransportException() {
     }
 
