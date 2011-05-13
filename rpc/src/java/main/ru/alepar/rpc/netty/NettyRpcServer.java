@@ -83,9 +83,10 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            log.debug("NettyRpcServer caught exception", e.getCause());
-            e.getChannel().write(new InvocationResponse(null, new TransportException(e.getCause()))) //try to pass exception to client
-                    .addListener(ChannelFutureListener.CLOSE);  //and close connection on completion
+            log.warn("NettyRpcServer caught exception", e.getCause());
+            if (e.getChannel().isOpen()) {
+                e.getChannel().close();
+            }
         }
     }
 
