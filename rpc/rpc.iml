@@ -8,9 +8,53 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="netty" level="project" />
-    <orderEntry type="library" exported="" scope="TEST" name="junit" level="project" />
-    <orderEntry type="library" exported="" name="logging" level="project" />
+    <orderEntry type="module-library">
+      <library name="netty">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../lib/netty" />
+          <root url="file://$MODULE_DIR$/../lib/netty" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../lib/netty" />
+          <root url="file://$MODULE_DIR$/../lib/netty" />
+        </SOURCES>
+        <jarDirectory url="file://$MODULE_DIR$/../lib/netty" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/../lib/netty" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library name="logging">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../lib/logging" />
+          <root url="file://$MODULE_DIR$/../lib/logging" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../lib/logging" />
+          <root url="file://$MODULE_DIR$/../lib/logging" />
+        </SOURCES>
+        <jarDirectory url="file://$MODULE_DIR$/../lib/logging" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/../lib/logging" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library name="junit">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../lib/junit" />
+          <root url="file://$MODULE_DIR$/../lib/junit" />
+        </CLASSES>
+        <JAVADOC>
+          <root url="jar://$MODULE_DIR$/../lib/junit/jmock-2.5.1-javadoc.zip!/" />
+        </JAVADOC>
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../lib/junit" />
+          <root url="file://$MODULE_DIR$/../lib/junit" />
+        </SOURCES>
+        <jarDirectory url="file://$MODULE_DIR$/../lib/junit" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/../lib/junit" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
