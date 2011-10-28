@@ -8,7 +8,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library name="netty">
         <CLASSES>
           <root url="file://$MODULE_DIR$/../lib/netty" />
@@ -23,7 +23,7 @@
         <jarDirectory url="file://$MODULE_DIR$/../lib/netty" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library name="logging">
         <CLASSES>
           <root url="file://$MODULE_DIR$/../lib/logging" />
