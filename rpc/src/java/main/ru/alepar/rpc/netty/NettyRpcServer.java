@@ -59,17 +59,26 @@ public class NettyRpcServer implements RpcServer {
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             InvocationRequest msg = (InvocationRequest) e.getMessage();
 
-            Class clazz = Class.forName(msg.className);
-            Object impl = implementations.get(clazz);
-
             try {
+                Class clazz = Class.forName(msg.className);
+                Object impl = implementations.get(clazz);
+                if(impl == null) {
+                    throw new RuntimeException("interface is not registered on server: " + msg.className);
+                }
+
                 Object returnValue;
                 Method method;
                 if (msg.args != null) {
                     method = clazz.getMethod(msg.methodName, msg.types);
+                    if(method == null) {
+                        throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
+                    }
                     returnValue = method.invoke(impl, (Object[]) msg.args);
                 } else {
                     method = clazz.getMethod(msg.methodName);
+                    if(method == null) {
+                        throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
+                    }
                     returnValue = method.invoke(impl);
                 }
                 Serializable safeReturnValue = (Serializable) returnValue;
