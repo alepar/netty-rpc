@@ -1,8 +1,9 @@
 package ru.alepar.rpc;
 
-public interface RpcClient {
+public interface RpcClient extends ProxyFactory {
 
-    <T> T getImplementation(Class<T> clazz);
+    <T> void addImplementation(Class<T> interfaceClass, T implObject);
 
     void shutdown();
+
 }

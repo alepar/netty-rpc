@@ -8,7 +8,6 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.RpcServer;
-import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -22,7 +21,7 @@ public class NettyRpcServer implements RpcServer {
 
     private static final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
-    private final Map<Class, Object> implementations = new HashMap<Class, Object>();
+    private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
     private final ServerBootstrap bootstrap;
 
     public NettyRpcServer(InetSocketAddress bindAddress) {
@@ -49,8 +48,13 @@ public class NettyRpcServer implements RpcServer {
     }
 
     @Override
-    public <T> void addImplementation(Class<T> clazz, T impl) {
-        implementations.put(clazz, impl);
+    public <T> void addImplementation(Class<T> interfaceClass, T impl) {
+        implementations.put(interfaceClass, new SimpleServerProvider<T>(impl));
+    }
+
+    @Override
+    public <T> void addClass(Class<T> interfaceClass, Class<? extends T> implClass) {
+        implementations.put(interfaceClass, new InjectingServerProvider<T>(implClass));
     }
 
     private class RpcHandler extends SimpleChannelHandler {
@@ -61,10 +65,11 @@ public class NettyRpcServer implements RpcServer {
 
             try {
                 Class clazz = Class.forName(msg.className);
-                Object impl = implementations.get(clazz);
-                if(impl == null) {
+                ServerProvider<?> provider = implementations.get(clazz);
+                if(provider == null) {
                     throw new RuntimeException("interface is not registered on server: " + msg.className);
                 }
+                Object impl = provider.provideFor(ctx.getChannel());
 
                 Object returnValue;
                 Method method;

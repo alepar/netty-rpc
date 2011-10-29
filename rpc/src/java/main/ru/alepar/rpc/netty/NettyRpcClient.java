@@ -6,22 +6,27 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import ru.alepar.rpc.RpcClient;
-import ru.alepar.rpc.exception.ProtocolException;
 import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+import static ru.alepar.rpc.netty.Util.validateMethod;
+
 public class NettyRpcClient implements RpcClient {
 
-    private final InvocationHandler handler = new NettyInvocationHandler();
+    private final InvocationHandler handler = new ClientProxyHandler();
     private final Channel channel;
     private final ClientBootstrap bootstrap;
+    private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
 
     private CountDownLatch latch;
     private InvocationResponse response;
@@ -57,57 +62,71 @@ public class NettyRpcClient implements RpcClient {
     }
 
     @Override
+    public <T> void addImplementation(Class<T> interfaceClass, T implObject) {
+        implementations.put(interfaceClass, implObject);
+    }
+
+    @Override
     @SuppressWarnings({"unchecked"})
     public <T> T getImplementation(Class<T> clazz) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, handler);
     }
 
-    private class NettyInvocationHandler implements InvocationHandler {
+    private class ClientProxyHandler implements InvocationHandler {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             latch = new CountDownLatch(1);
             validateMethod(method);
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
             latch.await();
             if (response.exc != null) {
                 throw response.exc;
             }
             return response.returnValue;
         }
-
-        private void validateMethod(Method method) {
-            try {
-                for (int i = 0; i < method.getParameterTypes().length; i++) {
-                    Class<?> clazz = method.getParameterTypes()[i];
-                    if (!clazz.isPrimitive() && !Serializable.class.isAssignableFrom(clazz)) {
-                        throw new RuntimeException("param #" + (i + 1) + "(" + clazz.getName() + ") is not serializable");
-                    }
-                }
-                Class<?> clazz = method.getReturnType();
-                if(!clazz.isPrimitive() && !Serializable.class.isAssignableFrom(clazz)) {
-                    throw new RuntimeException("return type (" + clazz.getName() + ") is not serializable");
-                }
-            } catch (RuntimeException e) {
-                throw new ProtocolException("cannot rpc method: " + method, e);
-            }
-        }
-    }
-
-    private static Serializable[] toSerializable(Object[] args) {
-        if(args == null) {
-            return null;
-        }
-        Serializable[] result = new Serializable[args.length];
-        for (int i = 0; i < args.length; i++) {
-            result[i] = (Serializable) args[i];
-        }
-        return result;
     }
 
     private class RpcHandler extends SimpleChannelHandler {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            response = (InvocationResponse) e.getMessage();
+            Object message = e.getMessage();
+            if(message instanceof InvocationResponse) {
+                processResponse((InvocationResponse) message);
+            } else if(message instanceof InvocationRequest) {
+                processRequest((InvocationRequest) message);
+            }
+
+        }
+
+        private void processRequest(InvocationRequest msg) {
+            try {
+                Class clazz = Class.forName(msg.className);
+                Object impl = implementations.get(clazz);
+                if(impl == null) {
+                    throw new RuntimeException("interface is not registered on client: " + msg.className);
+                }
+
+                Method method;
+                if (msg.args != null) {
+                    method = clazz.getMethod(msg.methodName, msg.types);
+                    if(method == null) {
+                        throw new RuntimeException("method is not found in client implementation: " + msg.methodName);
+                    }
+                    method.invoke(impl, (Object[]) msg.args);
+                } else {
+                    method = clazz.getMethod(msg.methodName);
+                    if(method == null) {
+                        throw new RuntimeException("method is not found in client implementation: " + msg.methodName);
+                    }
+                    method.invoke(impl);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("client failed to process request " + msg, e);
+            }
+        }
+
+        private void processResponse(InvocationResponse message) {
+            response = message;
             latch.countDown();
         }
 

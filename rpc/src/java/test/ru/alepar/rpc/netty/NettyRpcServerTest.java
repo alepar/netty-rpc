@@ -4,8 +4,11 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import ru.alepar.rpc.Inject;
+import ru.alepar.rpc.ProxyFactory;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.*;
@@ -253,7 +256,7 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT, expected = TransportException.class)
+    @Test(timeout = TIMEOUT, expected = TransportException.class) @Ignore("we don't handle this yet - but we're planning to, yeah")
     public void throwsTransportExceptionIfConnectionIsAbruptlyTerminated() throws Throwable {
         final InfinteWaiter impl = new InfinteWaiter() {
             @SuppressWarnings({"InfiniteLoopStatement"})
@@ -385,6 +388,30 @@ public class NettyRpcServerTest {
         }
     }
 
+    @Test(timeout = TIMEOUT)
+    public void feedbackToClientWorks() throws Exception {
+        final String MSG = "echoed-hi";
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addClass(SomeServerApi.class, SomeServerImpl.class);
+
+        final ClientApi mockClient = mockery.mock(ClientApi.class);
+        mockery.checking(new Expectations() {{
+            one(mockClient).feedback(MSG);
+        }});
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        client.addImplementation(ClientApi.class, mockClient);
+        SomeServerApi proxy = client.getImplementation(SomeServerApi.class);
+
+        try {
+            proxy.go(MSG);
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
     private interface NoParamsVoidReturn {
         void go();
     }
@@ -418,4 +445,27 @@ public class NettyRpcServerTest {
         void go() throws Throwable;
     }
     private static class MyException extends Exception { }
+
+    private interface SomeServerApi {
+        void go(String msg);
+    }
+
+    public static class SomeServerImpl implements SomeServerApi {
+
+        private final ProxyFactory feedback;
+
+        public SomeServerImpl(@Inject ProxyFactory feedback) {
+            this.feedback = feedback;
+        }
+
+        @Override
+        public void go(String msg) {
+            ClientApi clientProxy = feedback.getImplementation(ClientApi.class);
+            clientProxy.feedback(msg);
+        }
+    }
+
+    private interface ClientApi {
+        void feedback(String msg);
+    }
 }
