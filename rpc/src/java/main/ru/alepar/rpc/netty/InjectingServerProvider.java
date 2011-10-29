@@ -30,7 +30,6 @@ class InjectingServerProvider<T> implements ServerProvider {
         Object[] arguments = new Object[parameterTypes.length];
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            Class<?> parameterType = parameterTypes[i];
             arguments[i] = new FeedbackProxyFactory(channel);
         }
 

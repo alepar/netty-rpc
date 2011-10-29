@@ -7,6 +7,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
 
 import java.io.Serializable;
@@ -55,6 +56,11 @@ public class NettyRpcServer implements RpcServer {
     @Override
     public <T> void addClass(Class<T> interfaceClass, Class<? extends T> implClass) {
         implementations.put(interfaceClass, new InjectingServerProvider<T>(implClass));
+    }
+
+    @Override
+    public <T> void addFactory(Class<T> interfaceClass, ImplementationFactory<? extends T> factory) {
+        implementations.put(interfaceClass, new FactoryServerProvider<T>(factory));
     }
 
     private class RpcHandler extends SimpleChannelHandler {
