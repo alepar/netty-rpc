@@ -1,5 +1,6 @@
  - timeouts
- - thread-safe client proxies (that will be a blast ;-) - or get one proxy per thread?
+ - cache implementation instances per client
+ - thread-safe client proxies (that will be a blast ;-) - or get one proxy per thread? - nah - one channel, many InvocResponses - it doesn't know how to handle those yet
  - validate interface on registering it in rpc client/server
  - check if interface is registered on server side before returning client proxy
  - daemon threads
