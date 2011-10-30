@@ -412,6 +412,49 @@ public class NettyRpcServerTest {
         }
     }
 
+    @Test(timeout = TIMEOUT)
+    public void serverImplementationsAreCachedIeStatePersistsAcrossClientCalls() throws Exception {
+        final String MSG = "some stateful data stored on server-side";
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addClass(StatefulServerApi.class, StatefulServerImpl.class);
+
+        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        StatefulServerApi proxy = client.getImplementation(StatefulServerApi.class);
+
+        try {
+            proxy.save(MSG);
+            String response = proxy.load();
+            assertThat(response, equalTo(MSG));
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(timeout = TIMEOUT)
+    public void differentClientsHaveSeparateStateOnServerSide() throws Exception {
+        final String MSG = "some stateful data stored on server-side";
+
+        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addClass(StatefulServerApi.class, StatefulServerImpl.class);
+
+        RpcClient clientOne = new NettyRpcClient(BIND_ADDRESS);
+        StatefulServerApi proxyOne = clientOne.getImplementation(StatefulServerApi.class);
+        RpcClient clientTwo = new NettyRpcClient(BIND_ADDRESS);
+        StatefulServerApi proxyTwo = clientTwo.getImplementation(StatefulServerApi.class);
+
+        try {
+            proxyOne.save(MSG);
+            String response = proxyTwo.load();
+            assertThat(response, equalTo(new StatefulServerImpl().load()));
+        } finally {
+            clientOne.shutdown();
+            clientTwo.shutdown();
+            server.shutdown();
+        }
+    }
+
     private interface NoParamsVoidReturn {
         void go();
     }
@@ -467,5 +510,26 @@ public class NettyRpcServerTest {
 
     private interface ClientApi {
         void feedback(String msg);
+    }
+
+    private interface StatefulServerApi {
+        void save(String msg);
+        String load();
+    }
+
+    private static class StatefulServerImpl implements StatefulServerApi {
+        private String state = "value default for new instance - this is not what i expect";
+
+        public StatefulServerImpl() {}
+
+        @Override
+        public void save(String msg) {
+            this.state = msg;
+        }
+
+        @Override
+        public String load() {
+            return state;
+        }
     }
 }

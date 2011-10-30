@@ -16,6 +16,8 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 
 public class NettyRpcServer implements RpcServer {
@@ -65,17 +67,20 @@ public class NettyRpcServer implements RpcServer {
 
     private class RpcHandler extends SimpleChannelHandler {
 
+        private final ConcurrentMap<Class<?>, Object> cache = new ConcurrentHashMap<Class<?>, Object> ();
+
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             InvocationRequest msg = (InvocationRequest) e.getMessage();
 
             try {
                 Class clazz = Class.forName(msg.className);
-                ServerProvider<?> provider = implementations.get(clazz);
-                if(provider == null) {
-                    throw new RuntimeException("interface is not registered on server: " + msg.className);
+
+                Object impl = cache.get(clazz);
+                if (impl == null) {
+                    impl = createImplementation(ctx, msg, clazz);
+                    cache.put(clazz, impl);
                 }
-                Object impl = provider.provideFor(ctx.getChannel());
 
                 Object returnValue;
                 Method method;
@@ -99,6 +104,14 @@ public class NettyRpcServer implements RpcServer {
             } catch (Throwable t) {
                 e.getChannel().write(new InvocationResponse(null, t));
             }
+        }
+
+        private Object createImplementation(ChannelHandlerContext ctx, InvocationRequest msg, Class clazz) {
+            ServerProvider<?> provider = implementations.get(clazz);
+            if(provider == null) {
+                throw new RuntimeException("interface is not registered on server: " + msg.className);
+            }
+            return provider.provideFor(ctx.getChannel());
         }
 
         @Override
