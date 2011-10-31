@@ -1,10 +1,18 @@
- - shutdown server before client - hangs - wtf???
+ - everything async (no return values, no exceptions, immediate return)
+ - exceptions go to a common handler
+ - ClientId
+ - callback on client accept/death
 
- - timeouts
- - thread-safe client proxies (that will be a blast ;-) - or get one proxy per thread? - nah - one channel, many InvocResponses - it doesn't know how to handle those yet
- - validate interface on registering it in rpc client/server
- - check if interface is registered on server side before returning client proxy
  - daemon threads
 
- - authentication
+ - shutdown server before client - hangs - wtf???
+
+ - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen
+ - peer-to-peer mode
+
+ - validate interface on registering it in rpc client/server
+ - check if interface is registered on server side before returning client proxy
+
  - compression
+ - encryption
+ - authentication
