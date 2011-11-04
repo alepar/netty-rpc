@@ -416,27 +416,6 @@ public class NettyRpcServerTest {
         void feedback(String msg);
     }
 
-    private interface StatefulServerApi {
-        void save(String msg);
-        String load();
-    }
-
-    private static class StatefulServerImpl implements StatefulServerApi {
-        private String state = "value default for new instance - this is not what i expect";
-
-        public StatefulServerImpl() {}
-
-        @Override
-        public void save(String msg) {
-            this.state = msg;
-        }
-
-        @Override
-        public String load() {
-            return state;
-        }
-    }
-
     private static void giveTimeForMessagesToBeProcessed() {
         try {
             sleep(100l);
