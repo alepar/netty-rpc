@@ -3,6 +3,7 @@ package ru.alepar.rpc.netty;
 import ru.alepar.rpc.exception.ProtocolException;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 class Util {
@@ -16,8 +17,8 @@ class Util {
                 }
             }
             Class<?> clazz = method.getReturnType();
-            if(!clazz.isPrimitive() && !Serializable.class.isAssignableFrom(clazz)) {
-                throw new RuntimeException("return type (" + clazz.getName() + ") is not serializable");
+            if(clazz != Void.TYPE) {
+                throw new RuntimeException("method must have void as return type");
             }
         } catch (RuntimeException e) {
             throw new ProtocolException("cannot rpc method: " + method, e);
@@ -33,5 +34,22 @@ class Util {
             result[i] = (Serializable) args[i];
         }
         return result;
+    }
+
+    static void invokeMethod(InvocationRequest msg, Class clazz, Object impl) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Method method;
+        if (msg.args != null) {
+            method = clazz.getMethod(msg.methodName, msg.types);
+            if(method == null) {
+                throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
+            }
+            method.invoke(impl, (Object[]) msg.args);
+        } else {
+            method = clazz.getMethod(msg.methodName);
+            if(method == null) {
+                throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
+            }
+            method.invoke(impl);
+        }
     }
 }

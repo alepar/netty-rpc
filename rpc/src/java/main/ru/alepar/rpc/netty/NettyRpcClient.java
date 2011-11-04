@@ -5,31 +5,34 @@ import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.exception.TransportException;
 
-import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+import static ru.alepar.rpc.netty.Util.invokeMethod;
 import static ru.alepar.rpc.netty.Util.validateMethod;
 
 public class NettyRpcClient implements RpcClient {
+
+    private final Logger log = LoggerFactory.getLogger(NettyRpcClient.class);
 
     private final InvocationHandler handler = new ClientProxyHandler();
     private final Channel channel;
     private final ClientBootstrap bootstrap;
     private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
-
-    private CountDownLatch latch;
-    private InvocationResponse response;
+    private List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
 
     public NettyRpcClient(InetSocketAddress remoteAddress) {
         bootstrap = new ClientBootstrap(
@@ -72,17 +75,27 @@ public class NettyRpcClient implements RpcClient {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, handler);
     }
 
+    @Override
+    public void addExceptionListener(ExceptionListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners(Exception exc) {
+        for (ExceptionListener listener : listeners) {
+            try {
+                listener.onExceptionCaught(exc);
+            } catch (Exception e) {
+                log.error("exception listener " + listener + " threw exception", exc);
+            }
+        }
+    }
+
     private class ClientProxyHandler implements InvocationHandler {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            latch = new CountDownLatch(1);
             validateMethod(method);
             channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
-            latch.await();
-            if (response.exc != null) {
-                throw response.exc;
-            }
-            return response.returnValue;
+            return null;
         }
     }
 
@@ -90,51 +103,42 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             Object message = e.getMessage();
-            if(message instanceof InvocationResponse) {
-                processResponse((InvocationResponse) message);
-            } else if(message instanceof InvocationRequest) {
-                processRequest((InvocationRequest) message);
+            log.debug("client got message {}", message.toString());
+            if(message instanceof InvocationRequest) {
+                processRequest(e, (InvocationRequest) message);
+            } else if (message instanceof ExceptionNotify) {
+                notifyListeners(((ExceptionNotify)message).exc);
+            } else {
+                log.error("got unknown message from the channel: {}", message);
             }
 
         }
 
-        private void processRequest(InvocationRequest msg) {
+        private void processRequest(MessageEvent e, InvocationRequest msg) {
             try {
                 Class clazz = Class.forName(msg.className);
-                Object impl = implementations.get(clazz);
-                if(impl == null) {
-                    throw new RuntimeException("interface is not registered on client: " + msg.className);
-                }
+                Object impl = getImplementation(msg, clazz);
 
-                Method method;
-                if (msg.args != null) {
-                    method = clazz.getMethod(msg.methodName, msg.types);
-                    if(method == null) {
-                        throw new RuntimeException("method is not found in client implementation: " + msg.methodName);
-                    }
-                    method.invoke(impl, (Object[]) msg.args);
-                } else {
-                    method = clazz.getMethod(msg.methodName);
-                    if(method == null) {
-                        throw new RuntimeException("method is not found in client implementation: " + msg.methodName);
-                    }
-                    method.invoke(impl);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("client failed to process request " + msg, e);
+                invokeMethod(msg, clazz, impl);
+            } catch (Exception exc) {
+                log.error("caught exception while trying to invoke implementation", exc);
+                e.getChannel().write(new ExceptionNotify(exc));
             }
         }
 
-        private void processResponse(InvocationResponse message) {
-            response = message;
-            latch.countDown();
+        private Object getImplementation(InvocationRequest msg, Class clazz) {
+            Object impl = implementations.get(clazz);
+            if(impl == null) {
+                throw new RuntimeException("interface is not registered on client: " + msg.className);
+            }
+            return impl;
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            response = new InvocationResponse(null, new TransportException(e.getCause()));
-            latch.countDown();
+            notifyListeners(new TransportException(e.getCause()));
         }
+
     }
 
 }

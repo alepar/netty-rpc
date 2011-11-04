@@ -4,17 +4,6 @@ import java.util.Arrays;
 
 public class RemoteException extends RuntimeException {
 
-    public RemoteException() {
-    }
-
-    public RemoteException(String message) {
-        super(message);
-    }
-
-    public RemoteException(String message, Throwable cause) {
-        super(message, impose(cause));
-    }
-
     public RemoteException(Throwable cause) {
         super(impose(cause));
     }
@@ -31,7 +20,7 @@ public class RemoteException extends RuntimeException {
         private final String srcClassName;
 
         private ImpostorException(Throwable src, Throwable cause) {
-            super(src.getMessage(), cause);
+            super(src.getMessage(), impose(cause));
             this.setStackTrace(Arrays.copyOf(src.getStackTrace(), src.getStackTrace().length));
             this.srcClassName = src.getClass().getName();
         }

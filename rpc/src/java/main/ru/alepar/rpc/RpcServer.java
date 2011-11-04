@@ -8,5 +8,11 @@ public interface RpcServer {
 
     <T> void addFactory(Class<T> interfaceClass, ImplementationFactory<? extends T> factory);
 
+    void addExceptionListener(ExceptionListener listener);
+
     void shutdown();
+
+    public interface ExceptionListener {
+        void onExceptionCaught(Exception e);
+    }
 }

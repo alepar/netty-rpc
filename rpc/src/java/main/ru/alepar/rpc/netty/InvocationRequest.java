@@ -16,4 +16,11 @@ class InvocationRequest implements Serializable {
         this.types = types;
     }
 
+    @Override
+    public String toString() {
+        return "InvocationRequest{" +
+                "className='" + className + '\'' +
+                ", methodName='" + methodName + '\'' +
+                '}';
+    }
 }

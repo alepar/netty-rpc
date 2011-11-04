@@ -1,13 +1,16 @@
- - peer-to-peer mode
- - everything async (no return values, no exceptions, immediate return)
- - exceptions go to a common handler
  - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen
 
- - shutdown server before client - hangs - wtf???
+ - handshake on connection establish
+ - clientid
+
+ - shutdown server before client - hangs - it's prob because server doesn't close client channels
+ - fix and unignore throwsTransportExceptionIfConnectionIsAbruptlyTerminated
 
  - daemon threads
  - validate interface on registering it in rpc client/server
  - check if interface is registered on server side before returning client proxy
+
+ - peer-to-peer mode
 
  - compression
  - encryption

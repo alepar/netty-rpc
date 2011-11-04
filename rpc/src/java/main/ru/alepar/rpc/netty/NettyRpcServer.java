@@ -9,21 +9,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.exception.TransportException;
 
-import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+
+import static ru.alepar.rpc.netty.Util.invokeMethod;
 
 public class NettyRpcServer implements RpcServer {
 
-    private static final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
+    private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
+    private List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
     private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
     private final ServerBootstrap bootstrap;
 
@@ -47,6 +51,7 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public void shutdown() {
+        // TODO close all client channels
         bootstrap.releaseExternalResources();
     }
 
@@ -65,61 +70,69 @@ public class NettyRpcServer implements RpcServer {
         implementations.put(interfaceClass, new FactoryServerProvider<T>(factory));
     }
 
+    @Override
+    public void addExceptionListener(ExceptionListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners(Exception exc) {
+        for (ExceptionListener listener : listeners) {
+            try {
+                listener.onExceptionCaught(exc);
+            } catch (Exception e) {
+                log.error("exception listener " + listener + " threw exception", exc);
+            }
+        }
+    }
+
     private class RpcHandler extends SimpleChannelHandler {
 
         private final ConcurrentMap<Class<?>, Object> cache = new ConcurrentHashMap<Class<?>, Object> ();
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            InvocationRequest msg = (InvocationRequest) e.getMessage();
-
-            try {
-                Class clazz = Class.forName(msg.className);
-
-                Object impl = cache.get(clazz);
-                if (impl == null) {
-                    impl = createImplementation(ctx, msg, clazz);
-                    cache.put(clazz, impl);
-                }
-
-                Object returnValue;
-                Method method;
-                if (msg.args != null) {
-                    method = clazz.getMethod(msg.methodName, msg.types);
-                    if(method == null) {
-                        throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
-                    }
-                    returnValue = method.invoke(impl, (Object[]) msg.args);
-                } else {
-                    method = clazz.getMethod(msg.methodName);
-                    if(method == null) {
-                        throw new RuntimeException("method is not found in server implementation: " + msg.methodName);
-                    }
-                    returnValue = method.invoke(impl);
-                }
-                Serializable safeReturnValue = (Serializable) returnValue;
-                e.getChannel().write(new InvocationResponse(safeReturnValue, null));
-            } catch (InvocationTargetException exc) {
-                e.getChannel().write(new InvocationResponse(null, exc.getCause()));
-            } catch (Throwable t) {
-                e.getChannel().write(new InvocationResponse(null, t));
+            Object message = e.getMessage();
+            log.debug("server got message {} from {}", message.toString(), ctx.getChannel().toString());
+            if (message instanceof InvocationRequest) {
+                processRequest(ctx, e, (InvocationRequest) message);
+            } else if(message instanceof ExceptionNotify) {
+                notifyListeners(((ExceptionNotify) message).exc);
+            } else {
+                log.error("got unknown message from the channel: {}", message);
             }
         }
 
-        private Object createImplementation(ChannelHandlerContext ctx, InvocationRequest msg, Class clazz) {
+        private void processRequest(ChannelHandlerContext ctx, MessageEvent e, InvocationRequest message) {
+            try {
+                Class clazz = Class.forName(message.className);
+                Object impl = getImplementation(ctx, clazz);
+                invokeMethod(message, clazz, impl);
+            } catch (Exception exc) {
+                log.error("caught exception while trying to invoke implementation", exc);
+                e.getChannel().write(new ExceptionNotify(exc));
+            }
+        }
+
+        private Object getImplementation(ChannelHandlerContext ctx, Class clazz) {
+            Object impl = cache.get(clazz);
+            if (impl == null) {
+                impl = createImplementation(ctx, clazz);
+                cache.put(clazz, impl);
+            }
+            return impl;
+        }
+
+        private Object createImplementation(ChannelHandlerContext ctx, Class clazz) {
             ServerProvider<?> provider = implementations.get(clazz);
             if(provider == null) {
-                throw new RuntimeException("interface is not registered on server: " + msg.className);
+                throw new RuntimeException("interface is not registered on server: " + clazz.getCanonicalName());
             }
             return provider.provideFor(ctx.getChannel());
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            log.warn("NettyRpcServer caught exception", e.getCause());
-            if (e.getChannel().isOpen()) {
-                e.getChannel().close();
-            }
+            notifyListeners(new TransportException(e.getCause()));
         }
     }
 

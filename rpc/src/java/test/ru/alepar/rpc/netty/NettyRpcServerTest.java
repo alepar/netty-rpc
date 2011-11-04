@@ -15,6 +15,7 @@ import ru.alepar.rpc.exception.*;
 
 import java.io.Serializable;
 
+import static java.lang.Thread.sleep;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static ru.alepar.rpc.netty.Config.*;
@@ -40,21 +41,16 @@ public class NettyRpcServerTest {
 
         try {
             proxy.go();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
         }
     }
 
-    @Test(timeout = TIMEOUT)
-    public void returnedObjectIsPassedToClientSide() throws Exception {
+    @Test(timeout = TIMEOUT, expected = ProtocolException.class)
+    public void doNotAllowMethodsWithNonVoidReturnTypeToBeProxied() throws Exception {
         final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
-        final Integer returnValue = 5;
-
-        mockery.checking(new Expectations() {{
-            one(impl).go();
-            will(returnValue(returnValue));
-        }});
 
         RpcServer server = new NettyRpcServer(BIND_ADDRESS);
         server.addImplementation(NoParamsIntegerReturn.class, impl);
@@ -63,7 +59,7 @@ public class NettyRpcServerTest {
         final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
 
         try {
-            assertThat(proxy.go(), equalTo(returnValue));
+            proxy.go();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -72,50 +68,23 @@ public class NettyRpcServerTest {
 
     @Test(timeout = TIMEOUT)
     public void subsequentCallsWork() throws Exception {
-        final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
-        final Integer returnValueOne = 5;
-        final Integer returnValueTwo = 10;
+        final NoParamsVoidReturn impl = mockery.mock(NoParamsVoidReturn.class);
 
         mockery.checking(new Expectations() {{
             one(impl).go();
-            will(returnValue(returnValueOne));
             one(impl).go();
-            will(returnValue(returnValueTwo));
         }});
 
         RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(NoParamsIntegerReturn.class, impl);
+        server.addImplementation(NoParamsVoidReturn.class, impl);
 
         RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
+        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
 
         try {
-            assertThat(proxy.go(), equalTo(returnValueOne));
-            assertThat(proxy.go(), equalTo(returnValueTwo));
-        } finally {
-            client.shutdown();
-            server.shutdown();
-        }
-    }
-
-    @Test(timeout = TIMEOUT)
-    public void methodsWithPrimitiveReturnTypeWork() throws Exception {
-        final NoParamsPrimitiveReturn impl = mockery.mock(NoParamsPrimitiveReturn.class);
-        final long returnValue = 5;
-
-        mockery.checking(new Expectations() {{
-            one(impl).go();
-            will(returnValue(returnValue));
-        }});
-
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(NoParamsPrimitiveReturn.class, impl);
-
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final NoParamsPrimitiveReturn proxy = client.getImplementation(NoParamsPrimitiveReturn.class);
-
-        try {
-            assertThat(proxy.go(), equalTo(returnValue));
+            proxy.go();
+            proxy.go();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -139,6 +108,7 @@ public class NettyRpcServerTest {
 
         try {
             proxy.go(param);
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -163,29 +133,7 @@ public class NettyRpcServerTest {
 
         try {
             proxy.go(paramInt, paramLong);
-        } finally {
-            client.shutdown();
-            server.shutdown();
-        }
-    }
-
-    @Test(expected = IllegalStateException.class, timeout = TIMEOUT)
-    public void passesServersideExceptions() throws Exception {
-        final ExceptionThrower impl = new ExceptionThrower() {
-            @Override
-            public void go() throws IllegalStateException {
-                throw new IllegalStateException("expected exception");
-            }
-        };
-
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(ExceptionThrower.class, impl);
-
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final ExceptionThrower proxy = client.getImplementation(ExceptionThrower.class);
-
-        try {
-            proxy.go();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -209,6 +157,7 @@ public class NettyRpcServerTest {
 
         try {
             proxy.go((Serializable) s);
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -233,29 +182,6 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT, expected = ProtocolException.class)
-    public void throwsProtocolExceptionIfCannotSerializeReturnValue() throws Exception {
-        final NonSerializable impl = mockery.mock(NonSerializable.class);
-
-        mockery.checking(new Expectations() {{
-            allowing(impl).ret();
-            will(returnValue(new Object()));
-        }});
-
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(NonSerializable.class, impl);
-
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final NonSerializable proxy = client.getImplementation(NonSerializable.class);
-
-        try {
-            proxy.ret();
-        } finally {
-            client.shutdown();
-            server.shutdown();
-        }
-    }
-
     @Test(timeout = TIMEOUT, expected = TransportException.class) @Ignore("we don't handle this yet - but we're planning to, yeah")
     public void throwsTransportExceptionIfConnectionIsAbruptlyTerminated() throws Throwable {
         final InfinteWaiter impl = new InfinteWaiter() {
@@ -264,7 +190,7 @@ public class NettyRpcServerTest {
             public void hang() {
                 while(true) {
                     try {
-                        Thread.sleep(1000L);
+                        sleep(1000L);
                     } catch (InterruptedException ignored) {
                     }
                 }
@@ -296,92 +222,60 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT, expected = IllegalAccessException.class)
-    public void javaLangExceptionsAreNotWrappedInRemoteException() throws Throwable {
+    @Test(timeout = TIMEOUT)
+    public void exceptionsFromServerSideImplementationArePassedToClient() throws Throwable {
         final ThrowableThrower impl = new ThrowableThrower() {
             @Override
             public void go() throws Throwable {
-                throw new IllegalAccessException("some java.lang exception");
+                throw new IllegalAccessException("some exception");
             }
         };
+        final RpcClient.ExceptionListener listener = mockery.mock(RpcClient.ExceptionListener.class);
+        mockery.checking(new Expectations(){{
+            one(listener).onExceptionCaught(with(any(RemoteException.class)));
+        }});
 
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
         server.addImplementation(ThrowableThrower.class, impl);
 
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
         final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+        client.addExceptionListener(listener);
 
         try {
             proxy.go();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
         }
     }
 
-    @Test(timeout = TIMEOUT, expected = SafeRuntimeException.class)
-    public void safeRuntimeExceptionsAreNotWrappedInRemoteException() throws Throwable {
+    @Test(timeout = TIMEOUT)
+    public void exceptionsFromClientSideImplementationArePassedToServer() throws Throwable {
         final ThrowableThrower impl = new ThrowableThrower() {
             @Override
             public void go() throws Throwable {
-                throw new SafeRuntimeException();
+                throw new IllegalAccessException("some exception");
             }
         };
+        final RpcServer.ExceptionListener listener = mockery.mock(RpcServer.ExceptionListener.class);
+        mockery.checking(new Expectations() {{
+            one(listener).onExceptionCaught(with(any(RemoteException.class)));
+        }});
 
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(ThrowableThrower.class, impl);
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addExceptionListener(listener);
+        server.addClass(NoParamsVoidReturn.class, CallClientBack.class);
 
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        client.addImplementation(ThrowableThrower.class, impl);
+
+        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
 
         try {
             proxy.go();
-        } finally {
-            client.shutdown();
-            server.shutdown();
-        }
-    }
-
-    @Test(timeout = TIMEOUT, expected = SafeCheckedException.class)
-    public void safeCheckedExceptionsAreNotWrappedInRemoteException() throws Throwable {
-        final ThrowableThrower impl = new ThrowableThrower() {
-            @Override
-            public void go() throws Throwable {
-                throw new SafeCheckedException();
-            }
-        };
-
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(ThrowableThrower.class, impl);
-
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
-
-        try {
-            proxy.go();
-        } finally {
-            client.shutdown();
-            server.shutdown();
-        }
-    }
-
-    @Test(timeout = TIMEOUT, expected = RemoteException.class)
-    public void arbitraryExceptionsAreWrappedInRemoteException() throws Throwable {
-        final ThrowableThrower impl = new ThrowableThrower() {
-            @Override
-            public void go() throws Throwable {
-                throw new MyException();
-            }
-        };
-
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addImplementation(ThrowableThrower.class, impl);
-
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
-
-        try {
-            proxy.go();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -392,7 +286,7 @@ public class NettyRpcServerTest {
     public void feedbackToClientWorks() throws Exception {
         final String MSG = "echoed-hi";
 
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
         server.addClass(SomeServerApi.class, SomeServerImpl.class);
 
         final ClientApi mockClient = mockery.mock(ClientApi.class);
@@ -400,12 +294,14 @@ public class NettyRpcServerTest {
             one(mockClient).feedback(MSG);
         }});
 
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
         client.addImplementation(ClientApi.class, mockClient);
-        SomeServerApi proxy = client.getImplementation(SomeServerApi.class);
+        
+        final SomeServerApi proxy = client.getImplementation(SomeServerApi.class);
 
         try {
             proxy.go(MSG);
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -414,18 +310,22 @@ public class NettyRpcServerTest {
 
     @Test(timeout = TIMEOUT)
     public void serverImplementationsAreCachedIeStatePersistsAcrossClientCalls() throws Exception {
-        final String MSG = "some stateful data stored on server-side";
+        final String MSG = "some state";
 
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addClass(StatefulServerApi.class, StatefulServerImpl.class);
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addClass(State.class, ServerState.class);
 
-        RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        StatefulServerApi proxy = client.getImplementation(StatefulServerApi.class);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ClientState clientState = new ClientState();
+        client.addImplementation(State.class, clientState);
+        
+        final State serverStateProxy = client.getImplementation(State.class);
 
         try {
-            proxy.save(MSG);
-            String response = proxy.load();
-            assertThat(response, equalTo(MSG));
+            serverStateProxy.set(MSG);
+            serverStateProxy.get();
+            giveTimeForMessagesToBeProcessed();
+            assertThat(clientState.state, equalTo(MSG));
         } finally {
             client.shutdown();
             server.shutdown();
@@ -434,20 +334,30 @@ public class NettyRpcServerTest {
 
     @Test(timeout = TIMEOUT)
     public void differentClientsHaveSeparateStateOnServerSide() throws Exception {
-        final String MSG = "some stateful data stored on server-side";
+        final String MSG1 = "one state";
+        final String MSG2 = "second state";
 
-        RpcServer server = new NettyRpcServer(BIND_ADDRESS);
-        server.addClass(StatefulServerApi.class, StatefulServerImpl.class);
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        server.addClass(State.class, ServerState.class);
 
-        RpcClient clientOne = new NettyRpcClient(BIND_ADDRESS);
-        StatefulServerApi proxyOne = clientOne.getImplementation(StatefulServerApi.class);
-        RpcClient clientTwo = new NettyRpcClient(BIND_ADDRESS);
-        StatefulServerApi proxyTwo = clientTwo.getImplementation(StatefulServerApi.class);
+        final RpcClient clientOne = new NettyRpcClient(BIND_ADDRESS);
+        final ClientState clientOneState = new ClientState();
+        clientOne.addImplementation(State.class, clientOneState);
+        final State proxyOne = clientOne.getImplementation(State.class);
+        
+        final RpcClient clientTwo = new NettyRpcClient(BIND_ADDRESS);
+        final ClientState clientTwoState = new ClientState();
+        clientTwo.addImplementation(State.class, clientTwoState);
+        final State proxyTwo = clientTwo.getImplementation(State.class);
 
         try {
-            proxyOne.save(MSG);
-            String response = proxyTwo.load();
-            assertThat(response, equalTo(new StatefulServerImpl().load()));
+            proxyOne.set(MSG1);
+            proxyOne.get();
+            proxyTwo.set(MSG2);
+            proxyTwo.get();
+            giveTimeForMessagesToBeProcessed();
+            assertThat(clientOneState.state, equalTo(MSG1));
+            assertThat(clientTwoState.state, equalTo(MSG2));
         } finally {
             clientOne.shutdown();
             clientTwo.shutdown();
@@ -461,25 +371,20 @@ public class NettyRpcServerTest {
     private interface NoParamsIntegerReturn {
         Integer go();
     }
-    private interface NoParamsPrimitiveReturn {
-        long go();
-    }
+
     private interface IntegerParam {
         void go(Integer i);
     }
     private interface IntLongParam {
         void go(int i, long l);
     }
-    private interface ExceptionThrower {
-        void go() throws IllegalStateException;
-    }
+
     private interface OverloadedString {
         void go(String s); // though unused, is vital for correctnes of corresponding unit test
         void go(Serializable s);
     }
     private interface NonSerializable {
         void param(String s, Object o);
-        Object ret();
     }
     private interface InfinteWaiter {
         void hang();
@@ -487,7 +392,6 @@ public class NettyRpcServerTest {
     private interface ThrowableThrower {
         void go() throws Throwable;
     }
-    private static class MyException extends Exception { }
 
     private interface SomeServerApi {
         void go(String msg);
@@ -531,5 +435,67 @@ public class NettyRpcServerTest {
         public String load() {
             return state;
         }
+    }
+
+    private static void giveTimeForMessagesToBeProcessed() {
+        try {
+            sleep(100l);
+        } catch (InterruptedException ignored) {}
+    }
+
+    private static class CallClientBack implements NoParamsVoidReturn {
+        
+        private final ProxyFactory proxyFactory;
+
+        public CallClientBack(@Inject ProxyFactory proxyFactory) {
+            this.proxyFactory = proxyFactory;
+        }
+
+        @Override
+        public void go() {
+            try {
+                proxyFactory.getImplementation(ThrowableThrower.class).go();
+            } catch (Throwable ignored) {
+                ignored.printStackTrace();
+            }
+        }
+    }
+
+    private interface State {
+        void set(String state);
+        void get();
+    }
+    
+    private static class ServerState implements State {
+
+        private final ProxyFactory proxyFactory;
+        private String state;
+
+        public ServerState(@Inject ProxyFactory proxyFactory) {
+            this.proxyFactory = proxyFactory;
+        }
+
+        @Override
+        public void set(String state) {
+            this.state = state;
+        }
+
+        @Override
+        public void get() {
+            proxyFactory.getImplementation(State.class).set(state);
+        }
+    }
+
+    private static class ClientState implements State {
+
+        private String state;
+
+        @Override
+        public void set(String state) {
+            this.state = state;
+        }
+
+        @Override
+        public void get() { }
     }
 }
