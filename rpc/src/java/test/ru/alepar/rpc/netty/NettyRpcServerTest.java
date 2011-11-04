@@ -7,10 +7,7 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import ru.alepar.rpc.Inject;
-import ru.alepar.rpc.ProxyFactory;
-import ru.alepar.rpc.RpcClient;
-import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.*;
 import ru.alepar.rpc.exception.*;
 
 import java.io.Serializable;
@@ -363,6 +360,28 @@ public class NettyRpcServerTest {
             clientTwo.shutdown();
             server.shutdown();
         }
+    }
+
+    @Test(/*timeout = TIMEOUT*/)
+    public void serverNotifiesAboutClientConnectsAndDisconnects() throws Exception {
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        final RpcServer.ClientListener mock = mockery.mock(RpcServer.ClientListener.class);
+        server.addClientListener(mock);
+
+        mockery.checking(new Expectations(){{
+            one(mock).onClientConnect(with(any(ClientId.class))); // don't know the id yet
+        }});
+
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final ClientId clientId = client.getClientId();
+
+        mockery.checking(new Expectations(){{
+            one(mock).onClientDisconnect(clientId);
+        }});
+
+        client.shutdown();
+        giveTimeForMessagesToBeProcessed();
+        server.shutdown();
     }
 
     private interface NoParamsVoidReturn {

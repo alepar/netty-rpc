@@ -10,9 +10,17 @@ public interface RpcServer {
 
     void addExceptionListener(ExceptionListener listener);
 
+    void addClientListener(ClientListener listener);
+
     void shutdown();
 
     public interface ExceptionListener {
         void onExceptionCaught(Exception e);
+    }
+
+    public interface ClientListener {
+        void onClientConnect(ClientId clientId);
+
+        void onClientDisconnect(ClientId clientId);
     }
 }

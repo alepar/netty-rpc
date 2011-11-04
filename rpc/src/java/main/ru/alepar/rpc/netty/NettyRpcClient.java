@@ -7,6 +7,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.ClientId;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.exception.TransportException;
 
@@ -32,7 +33,10 @@ public class NettyRpcClient implements RpcClient {
     private final Channel channel;
     private final ClientBootstrap bootstrap;
     private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
-    private List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
+    private final List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
+    private final CountDownLatch latch;
+
+    private ClientId clientId;
 
     public NettyRpcClient(InetSocketAddress remoteAddress) {
         bootstrap = new ClientBootstrap(
@@ -55,6 +59,14 @@ public class NettyRpcClient implements RpcClient {
         if (!future.isSuccess()) {
             bootstrap.releaseExternalResources();
             throw new TransportException("failed to connect to " + remoteAddress, future.getCause());
+        }
+
+        latch = new CountDownLatch(1);
+        channel.write(new HandshakeFromClient());
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("interrupted waiting for handshake", e);
         }
     }
 
@@ -80,7 +92,12 @@ public class NettyRpcClient implements RpcClient {
         listeners.add(listener);
     }
 
-    private void notifyListeners(Exception exc) {
+    @Override
+    public ClientId getClientId() {
+        return clientId;
+    }
+
+    private void notifyExceptionListeners(Exception exc) {
         for (ExceptionListener listener : listeners) {
             try {
                 listener.onExceptionCaught(exc);
@@ -104,14 +121,17 @@ public class NettyRpcClient implements RpcClient {
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             Object message = e.getMessage();
             log.debug("client got message {}", message.toString());
+
             if(message instanceof InvocationRequest) {
                 processRequest(e, (InvocationRequest) message);
             } else if (message instanceof ExceptionNotify) {
-                notifyListeners(((ExceptionNotify)message).exc);
+                notifyExceptionListeners(((ExceptionNotify) message).exc);
+            } if(message instanceof HandshakeFromServer) {
+                clientId = ((HandshakeFromServer)message).clientId;
+                latch.countDown();
             } else {
                 log.error("got unknown message from the channel: {}", message);
             }
-
         }
 
         private void processRequest(MessageEvent e, InvocationRequest msg) {
@@ -136,7 +156,7 @@ public class NettyRpcClient implements RpcClient {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            notifyListeners(new TransportException(e.getCause()));
+            notifyExceptionListeners(new TransportException(e.getCause()));
         }
 
     }

@@ -6,6 +6,8 @@ public interface RpcClient extends ProxyFactory {
 
     void addExceptionListener(ExceptionListener listener);
 
+    ClientId getClientId();
+
     void shutdown();
 
     interface ExceptionListener {

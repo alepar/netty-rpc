@@ -7,11 +7,11 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.ClientId;
 import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.TransportException;
 
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +27,9 @@ public class NettyRpcServer implements RpcServer {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
-    private List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
+    private List<ExceptionListener> exceptionListeners = new CopyOnWriteArrayList<ExceptionListener>();
+    private final List<ClientListener> clientListeners = new CopyOnWriteArrayList<ClientListener>();
+
     private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
     private final ServerBootstrap bootstrap;
 
@@ -72,15 +74,40 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public void addExceptionListener(ExceptionListener listener) {
-        listeners.add(listener);
+        exceptionListeners.add(listener);
     }
 
-    private void notifyListeners(Exception exc) {
-        for (ExceptionListener listener : listeners) {
+    @Override
+    public void addClientListener(ClientListener listener) {
+        clientListeners.add(listener);
+    }
+
+    private void fireException(Exception exc) {
+        for (ExceptionListener listener : exceptionListeners) {
             try {
                 listener.onExceptionCaught(exc);
             } catch (Exception e) {
-                log.error("exception listener " + listener + " threw exception", exc);
+                log.error("exception listener " + listener + " threw exception", e);
+            }
+        }
+    }
+
+    private void fireClientConnect(ClientId clientId) {
+        for (ClientListener listener : clientListeners) {
+            try {
+                listener.onClientConnect(clientId);
+            } catch (Exception e) {
+                log.error("client listener " + listener + " threw exception", e);
+            }
+        }
+    }
+
+    private void fireClientDisconnect(ClientId clientId) {
+        for (ClientListener listener : clientListeners) {
+            try {
+                listener.onClientDisconnect(clientId);
+            } catch (Exception e) {
+                log.error("client listener " + listener + " threw exception", e);
             }
         }
     }
@@ -89,14 +116,30 @@ public class NettyRpcServer implements RpcServer {
 
         private final ConcurrentMap<Class<?>, Object> cache = new ConcurrentHashMap<Class<?>, Object> ();
 
+        private NettyClientId clientId;
+
+        @Override
+        public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+            clientId = new NettyClientId(ctx.getChannel());
+            fireClientConnect(clientId);
+        }
+
+        @Override
+        public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+            fireClientDisconnect(clientId);
+        }
+
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             Object message = e.getMessage();
             log.debug("server got message {} from {}", message.toString(), ctx.getChannel().toString());
+
             if (message instanceof InvocationRequest) {
                 processRequest(ctx, e, (InvocationRequest) message);
             } else if(message instanceof ExceptionNotify) {
-                notifyListeners(((ExceptionNotify) message).exc);
+                fireException(((ExceptionNotify) message).exc);
+            } else if(message instanceof HandshakeFromClient) {
+                ctx.getChannel().write(new HandshakeFromServer(clientId));
             } else {
                 log.error("got unknown message from the channel: {}", message);
             }
@@ -132,7 +175,7 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            notifyListeners(new TransportException(e.getCause()));
+            fireException(new TransportException(e.getCause()));
         }
     }
 
