@@ -352,8 +352,8 @@ public class NettyRpcServerTest {
 
         try {
             proxyOne.set(MSG1);
-            proxyOne.get();
             proxyTwo.set(MSG2);
+            proxyOne.get();
             proxyTwo.get();
             giveTimeForMessagesToBeProcessed();
             assertThat(clientOneState.state, equalTo(MSG1));
