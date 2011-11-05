@@ -4,16 +4,19 @@ import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.ClientId;
 
 import java.io.Serializable;
+import java.net.SocketAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.UUID;
 
-class NettyClientId implements ClientId, Serializable {
+public class NettyClientId implements ClientId, Serializable {
 
     private final byte[] digest;
+    private final String remoteAddress;
 
     NettyClientId(Channel channel) {
+        remoteAddress = channel.getRemoteAddress().toString();
         try {
             MessageDigest md = MessageDigest.getInstance("md5");
 
@@ -28,6 +31,10 @@ class NettyClientId implements ClientId, Serializable {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("couldn't build clientid", e);
         }
+    }
+
+    public String getRemoteAddress() {
+        return remoteAddress;
     }
 
     @Override

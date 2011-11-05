@@ -1,5 +1,5 @@
 package ru.alepar.rpc;
 
 public interface ImplementationFactory<T> {
-    T create(ProxyFactory proxyFactory);
+    T create(ClientId clientId, ProxyFactory proxyFactory);
 }
