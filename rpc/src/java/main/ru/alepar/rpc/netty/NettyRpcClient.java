@@ -126,7 +126,7 @@ public class NettyRpcClient implements RpcClient {
                 processRequest(e, (InvocationRequest) message);
             } else if (message instanceof ExceptionNotify) {
                 notifyExceptionListeners(((ExceptionNotify) message).exc);
-            } if(message instanceof HandshakeFromServer) {
+            } else if(message instanceof HandshakeFromServer) {
                 clientId = ((HandshakeFromServer)message).clientId;
                 latch.countDown();
             } else {
