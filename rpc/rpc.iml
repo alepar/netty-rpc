@@ -23,7 +23,7 @@
         <jarDirectory url="file://$MODULE_DIR$/../lib/netty" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="">
+    <orderEntry type="module-library">
       <library name="logging">
         <CLASSES>
           <root url="file://$MODULE_DIR$/../lib/logging" />
