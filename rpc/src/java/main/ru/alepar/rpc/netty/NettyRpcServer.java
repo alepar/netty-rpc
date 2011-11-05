@@ -14,6 +14,7 @@ import ru.alepar.rpc.exception.TransportException;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,8 @@ public class NettyRpcServer implements RpcServer {
     private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
     private final ServerBootstrap bootstrap;
 
+    private final ClientRepository clients = new ClientRepository();
+
     public NettyRpcServer(InetSocketAddress bindAddress) {
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
@@ -47,14 +50,33 @@ public class NettyRpcServer implements RpcServer {
                         new RpcHandler());
             }
         });
+        
+        addExceptionListener(new ExceptionListener() {
+            @Override
+            public void onExceptionCaught(ClientId clientId, Exception e) {
+                log.error("server caught an exception from client " + clientId.toString(), e);
+            }
+        });
 
         bootstrap.bind(bindAddress);
     }
 
     @Override
     public void shutdown() {
-        // TODO close all client channels
-        bootstrap.releaseExternalResources();
+        try {
+            List<ChannelFuture> futures = new LinkedList<ChannelFuture>();
+            for(Channel c: clients.getChannels()) {
+                if (c.isOpen()) {
+                    futures.add(c.close());
+                }
+            }
+            for (ChannelFuture future : futures) {
+                future.await();
+            }
+            bootstrap.releaseExternalResources();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("failed to shutdown properly", e);
+        }
     }
 
     @Override
@@ -82,10 +104,10 @@ public class NettyRpcServer implements RpcServer {
         clientListeners.add(listener);
     }
 
-    private void fireException(Exception exc) {
+    private void fireException(ClientId clientId, Exception exc) {
         for (ExceptionListener listener : exceptionListeners) {
             try {
-                listener.onExceptionCaught(exc);
+                listener.onExceptionCaught(clientId, exc);
             } catch (Exception e) {
                 log.error("exception listener " + listener + " threw exception", e);
             }
@@ -121,12 +143,14 @@ public class NettyRpcServer implements RpcServer {
         @Override
         public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
             clientId = new NettyClientId(ctx.getChannel());
+            clients.addClient(clientId, ctx.getChannel());
             fireClientConnect(clientId);
         }
 
         @Override
         public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
             fireClientDisconnect(clientId);
+            clients.removeClient(clientId);
         }
 
         @Override
@@ -137,7 +161,7 @@ public class NettyRpcServer implements RpcServer {
             if (message instanceof InvocationRequest) {
                 processRequest(ctx, e, (InvocationRequest) message);
             } else if(message instanceof ExceptionNotify) {
-                fireException(((ExceptionNotify) message).exc);
+                fireException(clientId, ((ExceptionNotify) message).exc);
             } else if(message instanceof HandshakeFromClient) {
                 ctx.getChannel().write(new HandshakeFromServer(clientId));
             } else {
@@ -175,7 +199,7 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            fireException(new TransportException(e.getCause()));
+            fireException(clientId, new TransportException(e.getCause()));
         }
     }
 

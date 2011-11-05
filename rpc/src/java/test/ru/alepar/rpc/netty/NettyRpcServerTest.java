@@ -23,6 +23,16 @@ public class NettyRpcServerTest {
     private final Mockery mockery = new JUnit4Mockery();
 
     @Test(timeout = TIMEOUT)
+    public void serverShutdownDoesNotHangIfThereAreStillClientsConnected() throws Exception {
+        // it can hang if server does not close client channels before releasing bootstrap resources
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+
+        server.shutdown();
+        client.shutdown();
+    }
+
+    @Test(timeout = TIMEOUT)
     public void invokesMethodsWithNoParamsAndVoidReturnType() throws Exception {
         final NoParamsVoidReturn impl = mockery.mock(NoParamsVoidReturn.class);
 
@@ -258,7 +268,7 @@ public class NettyRpcServerTest {
         };
         final RpcServer.ExceptionListener listener = mockery.mock(RpcServer.ExceptionListener.class);
         mockery.checking(new Expectations() {{
-            one(listener).onExceptionCaught(with(any(RemoteException.class)));
+            one(listener).onExceptionCaught(with(any(ClientId.class)), with(any(RemoteException.class)));
         }});
 
         final RpcServer server = new NettyRpcServer(BIND_ADDRESS);

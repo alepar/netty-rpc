@@ -1,6 +1,5 @@
  - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen
 
- - shutdown server before client - hangs - it's prob because server doesn't close client channels
  - fix and unignore throwsTransportExceptionIfConnectionIsAbruptlyTerminated
 
  - daemon threads

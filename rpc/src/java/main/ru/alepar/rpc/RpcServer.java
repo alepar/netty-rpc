@@ -15,7 +15,7 @@ public interface RpcServer {
     void shutdown();
 
     public interface ExceptionListener {
-        void onExceptionCaught(Exception e);
+        void onExceptionCaught(ClientId clientId, Exception e);
     }
 
     public interface ClientListener {
