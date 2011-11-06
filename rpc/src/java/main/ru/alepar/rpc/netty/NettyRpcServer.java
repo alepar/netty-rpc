@@ -113,6 +113,11 @@ public class NettyRpcServer implements RpcServer {
         clientListeners.add(listener);
     }
 
+    @Override
+    public Client getClient(Client.Id clientId) {
+        return clients.getClient(clientId);
+    }
+
     private void fireException(Client client, Exception exc) {
         for (ExceptionListener listener : exceptionListeners) {
             try {

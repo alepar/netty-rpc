@@ -12,6 +12,8 @@ public interface RpcServer {
 
     void addClientListener(ClientListener listener);
 
+    Client getClient(Client.Id clientId);
+
     void shutdown();
 
     public interface ExceptionListener {
