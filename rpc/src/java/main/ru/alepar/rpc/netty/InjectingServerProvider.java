@@ -1,8 +1,8 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
+import ru.alepar.rpc.Client;
 import ru.alepar.rpc.Inject;
-import ru.alepar.rpc.ProxyFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -30,7 +30,7 @@ class InjectingServerProvider<T> implements ServerProvider {
         Object[] arguments = new Object[parameterTypes.length];
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            arguments[i] = new FeedbackProxyFactory(channel);
+            arguments[i] = new NettyClient(channel);
         }
 
         return arguments;
@@ -49,7 +49,7 @@ class InjectingServerProvider<T> implements ServerProvider {
         for (int i = 0; i < constructor.getParameterTypes().length; i++) {
             Class<?> type = constructor.getParameterTypes()[i];
 
-            if(!hasInjectAnnotation(constructor.getParameterAnnotations()[i]) || !ProxyFactory.class.isAssignableFrom(type)) {
+            if(!hasInjectAnnotation(constructor.getParameterAnnotations()[i]) || !Client.class.isAssignableFrom(type)) {
                 return false;
             }
         }

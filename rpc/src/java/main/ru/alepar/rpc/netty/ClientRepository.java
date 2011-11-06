@@ -1,30 +1,28 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.util.internal.ConcurrentIdentityHashMap;
-import ru.alepar.rpc.ClientId;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 class ClientRepository {
     
-    private final ConcurrentMap<ClientId, Channel> idToChannel = new ConcurrentHashMap<ClientId, Channel>();
-    private final ConcurrentMap<Channel, ClientId> channelToId = new ConcurrentIdentityHashMap<Channel, ClientId>();
+    private final Set<NettyClient> clients = Collections.newSetFromMap(new ConcurrentHashMap<NettyClient, Boolean>());
 
-    public synchronized void addClient(ClientId clientId, Channel channel) {
-        idToChannel.put(clientId, channel);
-        channelToId.put(channel, clientId);
+    public synchronized void addClient(NettyClient client) {
+        clients.add(client);
     }
 
-    public synchronized void removeClient(ClientId clientId) {
-        Channel channel = idToChannel.remove(clientId);
-        channelToId.remove(channel);
+    public synchronized void removeClient(NettyClient client) {
+        clients.remove(client);
     }
 
     public Collection<Channel> getChannels() {
-        return channelToId.keySet();
+        List<Channel> channels = new ArrayList<Channel>(clients.size());
+        for (NettyClient client : clients) {
+            channels.add(client.getChannel());
+        }
+        return channels;
     }
     
 }

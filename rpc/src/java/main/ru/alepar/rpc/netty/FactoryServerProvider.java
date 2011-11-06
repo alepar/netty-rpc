@@ -13,6 +13,6 @@ class FactoryServerProvider<T> implements ServerProvider<T> {
 
     @Override
     public T provideFor(Channel channel) {
-        return factory.create(new NettyClientId(channel), new FeedbackProxyFactory(channel));
+        return factory.create(new NettyClient(channel));
     }
 }

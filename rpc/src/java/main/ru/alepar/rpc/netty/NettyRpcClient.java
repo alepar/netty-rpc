@@ -7,7 +7,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.alepar.rpc.ClientId;
+import ru.alepar.rpc.Client;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.exception.TransportException;
 
@@ -22,8 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
-import static ru.alepar.rpc.netty.Util.invokeMethod;
-import static ru.alepar.rpc.netty.Util.validateMethod;
+import static ru.alepar.rpc.netty.Util.*;
 
 public class NettyRpcClient implements RpcClient {
 
@@ -36,7 +35,7 @@ public class NettyRpcClient implements RpcClient {
     private final List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
     private final CountDownLatch latch;
 
-    private ClientId clientId;
+    private Client.Id clientId;
 
     public NettyRpcClient(InetSocketAddress remoteAddress) {
         bootstrap = new ClientBootstrap(
@@ -93,7 +92,7 @@ public class NettyRpcClient implements RpcClient {
     }
 
     @Override
-    public ClientId getClientId() {
+    public Client.Id getClientId() {
         return clientId;
     }
 

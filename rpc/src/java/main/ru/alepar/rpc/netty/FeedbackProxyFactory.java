@@ -1,16 +1,15 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.ProxyFactory;
+import ru.alepar.rpc.Client;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import static ru.alepar.rpc.netty.Util.toSerializable;
-import static ru.alepar.rpc.netty.Util.validateMethod;
+import static ru.alepar.rpc.netty.Util.*;
 
-class FeedbackProxyFactory implements ProxyFactory {
+class FeedbackProxyFactory implements Client.ProxyFactory {
 
     private final Channel clientChannel;
 

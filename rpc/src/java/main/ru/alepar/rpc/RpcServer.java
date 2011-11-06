@@ -15,12 +15,12 @@ public interface RpcServer {
     void shutdown();
 
     public interface ExceptionListener {
-        void onExceptionCaught(ClientId clientId, Exception e);
+        void onExceptionCaught(Client client, Exception e);
     }
 
     public interface ClientListener {
-        void onClientConnect(ClientId clientId);
+        void onClientConnect(Client client);
 
-        void onClientDisconnect(ClientId clientId);
+        void onClientDisconnect(Client client);
     }
 }

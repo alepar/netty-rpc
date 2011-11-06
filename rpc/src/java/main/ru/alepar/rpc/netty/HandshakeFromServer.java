@@ -1,14 +1,14 @@
 package ru.alepar.rpc.netty;
 
-import ru.alepar.rpc.ClientId;
+import ru.alepar.rpc.Client;
 
 import java.io.Serializable;
 
 class HandshakeFromServer implements Serializable {
 
-    final ClientId clientId;
+    final Client.Id clientId;
 
-    HandshakeFromServer(ClientId clientId) {
+    HandshakeFromServer(Client.Id clientId) {
         this.clientId = clientId;
     }
 }

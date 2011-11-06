@@ -7,8 +7,13 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import ru.alepar.rpc.*;
-import ru.alepar.rpc.exception.*;
+import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Inject;
+import ru.alepar.rpc.RpcClient;
+import ru.alepar.rpc.RpcServer;
+import ru.alepar.rpc.exception.ProtocolException;
+import ru.alepar.rpc.exception.RemoteException;
+import ru.alepar.rpc.exception.TransportException;
 
 import java.io.Serializable;
 
@@ -268,7 +273,7 @@ public class NettyRpcServerTest {
         };
         final RpcServer.ExceptionListener listener = mockery.mock(RpcServer.ExceptionListener.class);
         mockery.checking(new Expectations() {{
-            one(listener).onExceptionCaught(with(any(ClientId.class)), with(any(RemoteException.class)));
+            one(listener).onExceptionCaught(with(any(Client.class)), with(any(RemoteException.class)));
         }});
 
         final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
@@ -379,14 +384,13 @@ public class NettyRpcServerTest {
         server.addClientListener(mock);
 
         mockery.checking(new Expectations(){{
-            one(mock).onClientConnect(with(any(ClientId.class))); // don't know the id yet
+            one(mock).onClientConnect(with(any(Client.class))); // don't know the id yet
         }});
 
         final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
-        final ClientId clientId = client.getClientId();
 
         mockery.checking(new Expectations(){{
-            one(mock).onClientDisconnect(clientId);
+            one(mock).onClientDisconnect(with(any(Client.class))); // matcher, matching client.getClientId()
         }});
 
         client.shutdown();
@@ -428,15 +432,15 @@ public class NettyRpcServerTest {
 
     public static class SomeServerImpl implements SomeServerApi {
 
-        private final ProxyFactory feedback;
+        private final Client client;
 
-        public SomeServerImpl(@Inject ProxyFactory feedback) {
-            this.feedback = feedback;
+        public SomeServerImpl(@Inject Client client) {
+            this.client = client;
         }
 
         @Override
         public void go(String msg) {
-            ClientApi clientProxy = feedback.getImplementation(ClientApi.class);
+            ClientApi clientProxy = client.getProxyFactory().getImplementation(ClientApi.class);
             clientProxy.feedback(msg);
         }
     }
@@ -453,16 +457,16 @@ public class NettyRpcServerTest {
 
     private static class CallClientBack implements NoParamsVoidReturn {
         
-        private final ProxyFactory proxyFactory;
+        private final Client client;
 
-        public CallClientBack(@Inject ProxyFactory proxyFactory) {
-            this.proxyFactory = proxyFactory;
+        public CallClientBack(@Inject Client client) {
+            this.client = client;
         }
 
         @Override
         public void go() {
             try {
-                proxyFactory.getImplementation(ThrowableThrower.class).go();
+                client.getProxyFactory().getImplementation(ThrowableThrower.class).go();
             } catch (Throwable ignored) {
                 ignored.printStackTrace();
             }
@@ -476,11 +480,11 @@ public class NettyRpcServerTest {
     
     private static class ServerState implements State {
 
-        private final ProxyFactory proxyFactory;
+        private final Client client;
         private String state;
 
-        public ServerState(@Inject ProxyFactory proxyFactory) {
-            this.proxyFactory = proxyFactory;
+        public ServerState(@Inject Client client) {
+            this.client = client;
         }
 
         @Override
@@ -490,7 +494,7 @@ public class NettyRpcServerTest {
 
         @Override
         public void get() {
-            proxyFactory.getImplementation(State.class).set(state);
+            client.getProxyFactory().getImplementation(State.class).set(state);
         }
     }
 
