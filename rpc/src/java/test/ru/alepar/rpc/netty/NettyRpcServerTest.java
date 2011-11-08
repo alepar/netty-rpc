@@ -18,9 +18,10 @@ import ru.alepar.rpc.exception.TransportException;
 import java.io.Serializable;
 
 import static java.lang.Thread.sleep;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
-import static ru.alepar.rpc.netty.Config.*;
+import static ru.alepar.rpc.netty.Config.BIND_ADDRESS;
+import static ru.alepar.rpc.netty.Config.TIMEOUT;
 
 @RunWith(JMock.class)
 public class NettyRpcServerTest {
@@ -377,7 +378,7 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(/*timeout = TIMEOUT*/)
+    @Test(timeout = TIMEOUT)
     public void serverNotifiesAboutClientConnectsAndDisconnects() throws Exception {
         final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
         final RpcServer.ClientListener mock = mockery.mock(RpcServer.ClientListener.class);
@@ -396,6 +397,19 @@ public class NettyRpcServerTest {
         client.shutdown();
         giveTimeForMessagesToBeProcessed();
         server.shutdown();
+    }
+
+    @Test
+    public void clientGetsIdOnAcknowledgement() throws Exception {
+        final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+
+        try {
+            assertThat(server.getClient(client.getClientId()), not(nullValue()));
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
     }
 
     private interface NoParamsVoidReturn {

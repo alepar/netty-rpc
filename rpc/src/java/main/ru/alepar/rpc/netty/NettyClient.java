@@ -58,8 +58,8 @@ class NettyClient implements Client, Serializable {
 
     private static String toHexString(byte[] digest) {
         StringBuilder result = new StringBuilder();
-        for (byte b: digest) {
-            result.append(Integer.toHexString(0xFF & b));
+        for (int i =  digest.length-1; i >= 0; i--) {
+            result.append(Integer.toHexString(0xFF & (int) digest[i]));
         }
         return result.toString();
     }

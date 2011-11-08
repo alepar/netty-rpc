@@ -11,4 +11,11 @@ class HandshakeFromServer implements Serializable {
     HandshakeFromServer(Client.Id clientId) {
         this.clientId = clientId;
     }
+
+    @Override
+    public String toString() {
+        return "HandshakeFromServer{" +
+                "clientId=" + clientId +
+                '}';
+    }
 }
