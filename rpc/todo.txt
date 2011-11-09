@@ -3,6 +3,8 @@
  - keepAlive feature
  - fix and unignore throwsTransportExceptionIfConnectionIsAbruptlyTerminated
 
+ - builder - first configure, only after that - connect
+
  - daemon threads
  - validate interface on registering it in rpc client/server
  - check if interface is registered on server side before returning client proxy
