@@ -11,6 +11,8 @@ public interface RpcClient {
 
     void shutdown();
 
+    boolean isWritable();
+
     interface ExceptionListener {
         void onExceptionCaught(Exception e);
     }

@@ -96,6 +96,11 @@ public class NettyRpcClient implements RpcClient {
         return clientId;
     }
 
+    @Override
+    public boolean isWritable() {
+        return channel.isWritable();
+    }
+
     private void notifyExceptionListeners(Exception exc) {
         for (ExceptionListener listener : listeners) {
             try {
