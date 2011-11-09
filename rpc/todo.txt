@@ -1,4 +1,4 @@
- - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen
+ - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen, watch out for deadlocks
 
  - keepAlive feature
  - fix and unignore throwsTransportExceptionIfConnectionIsAbruptlyTerminated
