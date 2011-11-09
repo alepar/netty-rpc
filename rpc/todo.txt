@@ -1,5 +1,6 @@
  - waitFor feature on client/peer (timeout)  --  executeAndWait - wait until message is received and handled, no return values, unfreeze if Remote/Transport exceptions happen
 
+ - keepAlive feature
  - fix and unignore throwsTransportExceptionIfConnectionIsAbruptlyTerminated
 
  - daemon threads

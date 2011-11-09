@@ -1,5 +1,7 @@
 package ru.alepar.rpc;
 
+import java.util.Collection;
+
 public interface RpcServer {
 
     <T> void addImplementation(Class<T> interfaceClass, T implObject);
@@ -15,6 +17,8 @@ public interface RpcServer {
     Client getClient(Client.Id clientId);
 
     void shutdown();
+
+    Collection<Client> getClients();
 
     public interface ExceptionListener {
         void onExceptionCaught(Client client, Exception e);

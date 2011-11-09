@@ -32,4 +32,12 @@ class ClientRepository {
     public NettyClient getClient(Client.Id clientId) {
         return clients.get(clientId);
     }
+
+    public Collection<Client> getClients() {
+        Collection<Client> result = new ArrayList<Client>(clients.size());
+        for (NettyClient client : clients.values()) {
+            result.add(client);
+        }
+        return result;
+    }
 }

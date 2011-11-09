@@ -13,10 +13,7 @@ import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.TransportException;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -116,6 +113,11 @@ public class NettyRpcServer implements RpcServer {
     @Override
     public Client getClient(Client.Id clientId) {
         return clients.getClient(clientId);
+    }
+
+    @Override
+    public Collection<Client> getClients() {
+        return clients.getClients();
     }
 
     private void fireException(Client client, Exception exc) {
