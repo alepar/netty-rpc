@@ -56,6 +56,21 @@ public class NettyRpcServer implements RpcServer {
             }
         });
 
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!Thread.interrupted()) {
+                        for (Channel channel : clients.getChannels()) {
+                            channel.write(new KeepAlive());
+                        }
+                        Thread.sleep(30000l);
+                    }
+                } catch (InterruptedException ignored) {}
+                log.warn("NettyRpcServer-KeepAlive interrupted");
+            }
+        }, "NettyRpcServer-KeepAlive").start();
+
         acceptChannel = bootstrap.bind(bindAddress);
     }
 
@@ -180,6 +195,8 @@ public class NettyRpcServer implements RpcServer {
                 fireException(client, ((ExceptionNotify) message).exc);
             } else if(message instanceof HandshakeFromClient) {
                 ctx.getChannel().write(new HandshakeFromServer(client.getId()));
+            } else if(message instanceof KeepAlive) {
+                // ignore
             } else {
                 log.error("got unknown message from the channel: {}", message);
             }

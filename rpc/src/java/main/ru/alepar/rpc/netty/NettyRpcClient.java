@@ -67,6 +67,19 @@ public class NettyRpcClient implements RpcClient {
         } catch (InterruptedException e) {
             throw new RuntimeException("interrupted waiting for handshake", e);
         }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!Thread.interrupted()) {
+                        channel.write(new KeepAlive());
+                        Thread.sleep(30000l);
+                    }
+                } catch (InterruptedException ignored) {}
+                log.warn("NettyRpcClient-KeepAlive interrupted");
+            }
+        }, "NettyRpcClient-KeepAlive").start();
     }
 
     @Override
@@ -133,6 +146,8 @@ public class NettyRpcClient implements RpcClient {
             } else if(message instanceof HandshakeFromServer) {
                 clientId = ((HandshakeFromServer)message).clientId;
                 latch.countDown();
+            } else if(message instanceof KeepAlive) {
+                // ignore
             } else {
                 log.error("got unknown message from the channel: {}", message);
             }
