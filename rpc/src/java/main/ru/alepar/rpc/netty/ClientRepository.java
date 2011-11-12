@@ -13,11 +13,11 @@ class ClientRepository {
     
     private final Map<Client.Id, NettyClient> clients = new ConcurrentHashMap<Client.Id, NettyClient>();
 
-    public synchronized void addClient(NettyClient client) {
+    public void addClient(NettyClient client) {
         clients.put(client.getId(), client);
     }
 
-    public synchronized void removeClient(NettyClient client) {
+    public void removeClient(NettyClient client) {
         clients.remove(client.getId());
     }
 
