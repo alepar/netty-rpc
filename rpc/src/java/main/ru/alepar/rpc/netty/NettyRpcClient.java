@@ -22,7 +22,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
-import static ru.alepar.rpc.netty.Util.*;
+import static ru.alepar.rpc.netty.Util.invokeMethod;
+import static ru.alepar.rpc.netty.Util.validateMethod;
 
 public class NettyRpcClient implements RpcClient {
 
@@ -36,6 +37,7 @@ public class NettyRpcClient implements RpcClient {
     private final CountDownLatch latch;
 
     private Client.Id clientId;
+    private final Thread keepAliveThread;
 
     public NettyRpcClient(InetSocketAddress remoteAddress) {
         bootstrap = new ClientBootstrap(
@@ -68,7 +70,7 @@ public class NettyRpcClient implements RpcClient {
             throw new RuntimeException("interrupted waiting for handshake", e);
         }
 
-        new Thread(new Runnable() {
+        keepAliveThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -76,14 +78,17 @@ public class NettyRpcClient implements RpcClient {
                         channel.write(new KeepAlive());
                         Thread.sleep(30000l);
                     }
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
                 log.warn("NettyRpcClient-KeepAlive interrupted");
             }
-        }, "NettyRpcClient-KeepAlive").start();
+        }, "NettyRpcClient-KeepAlive");
+        keepAliveThread.start();
     }
 
     @Override
     public void shutdown() {
+        keepAliveThread.interrupt();
         channel.close().awaitUninterruptibly();
         bootstrap.releaseExternalResources();
     }
@@ -114,7 +119,7 @@ public class NettyRpcClient implements RpcClient {
         return channel.isWritable();
     }
 
-    private void notifyExceptionListeners(Exception exc) {
+    private void fireException(Exception exc) {
         for (ExceptionListener listener : listeners) {
             try {
                 listener.onExceptionCaught(exc);
@@ -142,7 +147,7 @@ public class NettyRpcClient implements RpcClient {
             if(message instanceof InvocationRequest) {
                 processRequest(e, (InvocationRequest) message);
             } else if (message instanceof ExceptionNotify) {
-                notifyExceptionListeners(((ExceptionNotify) message).exc);
+                fireException(((ExceptionNotify) message).exc);
             } else if(message instanceof HandshakeFromServer) {
                 clientId = ((HandshakeFromServer)message).clientId;
                 latch.countDown();
@@ -175,7 +180,7 @@ public class NettyRpcClient implements RpcClient {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            notifyExceptionListeners(new TransportException(e.getCause()));
+            fireException(new TransportException(e.getCause()));
         }
 
     }
