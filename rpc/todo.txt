@@ -4,6 +4,7 @@
 
  - builder - first configure, only after that - connect
  - employ visitor pattern for handling messages between client/server
+ - speed up java serialization - cache results in org.jboss.netty.handler.codec.serialization.CompactObjectInputStream.loadClass - we can try to submit this to netty itself ;-)
 
  - daemon threads
  - validate interface on registering it in rpc client/server
