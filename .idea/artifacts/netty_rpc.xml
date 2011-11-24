@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="netty-rpc">
-    <output-path>$PROJECT_DIR$/out/artifacts/netty-rpc</output-path>
-    <root id="archive" name="netty-rpc.jar">
-      <element id="module-output" name="rpc" />
-    </root>
-  </artifact>
-</component>

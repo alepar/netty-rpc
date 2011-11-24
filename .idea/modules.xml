@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/rpc/rpc.iml" filepath="$PROJECT_DIR$/rpc/rpc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/netty-rpc.iml" filepath="$PROJECT_DIR$/netty-rpc.iml" />
     </modules>
   </component>
 </project>
