@@ -1,7 +1,27 @@
 package ru.alepar.rpc.netty;
 
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
@@ -11,13 +31,6 @@ import ru.alepar.rpc.Client;
 import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.TransportException;
-
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 
 import static ru.alepar.rpc.netty.Util.invokeMethod;
 
@@ -34,7 +47,11 @@ public class NettyRpcServer implements RpcServer {
     private final ClientRepository clients = new ClientRepository();
     private final Channel acceptChannel;
 
-    public NettyRpcServer(InetSocketAddress bindAddress) {
+    public NettyRpcServer(final InetSocketAddress bindAddress) {
+        this(bindAddress, 30000l);
+    }
+
+    public NettyRpcServer(final InetSocketAddress bindAddress, final long keepalivePeriod) {
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -64,7 +81,7 @@ public class NettyRpcServer implements RpcServer {
                         for (Channel channel : clients.getChannels()) {
                             channel.write(new KeepAlive());
                         }
-                        Thread.sleep(30000l);
+                        Thread.sleep(keepalivePeriod);
                     }
                 } catch (InterruptedException ignored) {}
                 log.warn("NettyRpcServer-KeepAlive interrupted");

@@ -1,10 +1,11 @@
 package ru.alepar.rpc.netty;
 
+import java.io.Serializable;
+
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import ru.alepar.rpc.Client;
@@ -15,10 +16,11 @@ import ru.alepar.rpc.exception.ProtocolException;
 import ru.alepar.rpc.exception.RemoteException;
 import ru.alepar.rpc.exception.TransportException;
 
-import java.io.Serializable;
-
 import static java.lang.Thread.sleep;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static ru.alepar.rpc.netty.Config.BIND_ADDRESS;
 import static ru.alepar.rpc.netty.Config.TIMEOUT;
@@ -195,41 +197,33 @@ public class NettyRpcServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT, expected = TransportException.class) @Ignore("we don't handle this yet - but we're planning to, yeah")
+    @Test(timeout = TIMEOUT)
     public void throwsTransportExceptionIfConnectionIsAbruptlyTerminated() throws Throwable {
         final InfinteWaiter impl = new InfinteWaiter() {
             @SuppressWarnings({"InfiniteLoopStatement"})
             @Override
             public void hang() {
-                while(true) {
-                    try {
-                        sleep(1000L);
-                    } catch (InterruptedException ignored) {
-                    }
-                }
+                try {
+                    sleep(1000L);
+                } catch (InterruptedException ignored) {}
             }
         };
 
         final RpcServer server = new NettyRpcServer(BIND_ADDRESS);
         server.addImplementation(InfinteWaiter.class, impl);
 
-        final RpcClient client = new NettyRpcClient(BIND_ADDRESS);
+        final RpcClient client = new NettyRpcClient(BIND_ADDRESS, 30l);
         final InfinteWaiter proxy = client.getImplementation(InfinteWaiter.class);
 
+        final ExceptionSavingListener listener = new ExceptionSavingListener();
+        client.addExceptionListener(listener);
+
         try {
-            TestSupport.ErrorCatchingRunnable target = new TestSupport.ErrorCatchingRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    proxy.hang();
-                }
-            });
-            Thread thread = new Thread(target);
-            thread.start();
+            proxy.hang();
             server.shutdown();
-            thread.join();
-            if (target.getError() != null) {
-                throw target.getError();
-            }
+            giveTimeForMessagesToBeProcessed();
+            assertThat(listener.lastException(), notNullValue());
+            assertThat(listener.lastException().getClass(), equalTo((Class)TransportException.class));
         } finally {
             client.shutdown();
         }
@@ -523,5 +517,18 @@ public class NettyRpcServerTest {
 
         @Override
         public void get() { }
+    }
+
+    private static class ExceptionSavingListener implements RpcClient.ExceptionListener {
+        private volatile Exception lastException;
+
+        @Override
+        public void onExceptionCaught(Exception e) {
+            this.lastException = e;
+        }
+
+        public Exception lastException() {
+            return lastException;
+        }
     }
 }

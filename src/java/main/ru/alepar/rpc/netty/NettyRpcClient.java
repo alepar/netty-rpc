@@ -1,16 +1,5 @@
 package ru.alepar.rpc.netty;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
-import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.alepar.rpc.Client;
-import ru.alepar.rpc.RpcClient;
-import ru.alepar.rpc.exception.TransportException;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -21,6 +10,25 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
+import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.Client;
+import ru.alepar.rpc.RpcClient;
+import ru.alepar.rpc.exception.TransportException;
 
 import static ru.alepar.rpc.netty.Util.invokeMethod;
 import static ru.alepar.rpc.netty.Util.validateMethod;
@@ -39,7 +47,11 @@ public class NettyRpcClient implements RpcClient {
     private Client.Id clientId;
     private final Thread keepAliveThread;
 
-    public NettyRpcClient(InetSocketAddress remoteAddress) {
+    public NettyRpcClient(final InetSocketAddress remoteAddress) {
+        this(remoteAddress, 30000l);
+    }
+
+    public NettyRpcClient(final InetSocketAddress remoteAddress, final long keepalivePeriod) {
         bootstrap = new ClientBootstrap(
                 new NioClientSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -76,7 +88,7 @@ public class NettyRpcClient implements RpcClient {
                 try {
                     while (!Thread.interrupted()) {
                         channel.write(new KeepAlive());
-                        Thread.sleep(30000l);
+                        Thread.sleep(keepalivePeriod);
                     }
                 } catch (InterruptedException ignored) {
                 }
