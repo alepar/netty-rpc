@@ -1,11 +1,11 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Remote;
 
 import java.io.Serializable;
 
-class NettyClient implements Client, Serializable {
+class NettyClient implements Remote, Serializable {
 
     private final Channel channel;
     private final FeedbackProxyFactory proxyFactory;

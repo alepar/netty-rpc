@@ -1,7 +1,7 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Remote;
 import ru.alepar.rpc.Inject;
 
 import java.lang.annotation.Annotation;
@@ -49,7 +49,7 @@ class InjectingServerProvider<T> implements ServerProvider {
         for (int i = 0; i < constructor.getParameterTypes().length; i++) {
             Class<?> type = constructor.getParameterTypes()[i];
 
-            if(!hasInjectAnnotation(constructor.getParameterAnnotations()[i]) || !Client.class.isAssignableFrom(type)) {
+            if(!hasInjectAnnotation(constructor.getParameterAnnotations()[i]) || !Remote.class.isAssignableFrom(type)) {
                 return false;
             }
         }

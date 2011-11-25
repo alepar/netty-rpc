@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Remote;
 
 class ClientRepository {
     
-    private final Map<Client.Id, NettyClient> clients = new ConcurrentHashMap<Client.Id, NettyClient>();
+    private final Map<Remote.Id, NettyClient> clients = new ConcurrentHashMap<Remote.Id, NettyClient>();
 
     public void addClient(NettyClient client) {
         clients.put(client.getId(), client);
@@ -29,12 +29,12 @@ class ClientRepository {
         return channels;
     }
 
-    public NettyClient getClient(Client.Id clientId) {
+    public NettyClient getClient(Remote.Id clientId) {
         return clients.get(clientId);
     }
 
-    public Collection<Client> getClients() {
-        Collection<Client> result = new ArrayList<Client>(clients.size());
+    public Collection<Remote> getClients() {
+        Collection<Remote> result = new ArrayList<Remote>(clients.size());
         for (NettyClient client : clients.values()) {
             result.add(client);
         }

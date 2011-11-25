@@ -1,7 +1,7 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Remote;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -9,7 +9,7 @@ import java.lang.reflect.Proxy;
 
 import static ru.alepar.rpc.netty.Util.*;
 
-class FeedbackProxyFactory implements Client.ProxyFactory {
+class FeedbackProxyFactory implements Remote.ProxyFactory {
 
     private final Channel clientChannel;
 
@@ -19,7 +19,7 @@ class FeedbackProxyFactory implements Client.ProxyFactory {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public <T> T getImplementation(Class<T> clazz) {
+    public <T> T getProxy(Class<T> clazz) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new FeedbackProxyHandler(clientChannel));
     }
 

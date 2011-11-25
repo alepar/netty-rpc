@@ -14,19 +14,19 @@ public interface RpcServer {
 
     void addClientListener(ClientListener listener);
 
-    Client getClient(Client.Id clientId);
+    Remote getClient(Remote.Id clientId);
 
     void shutdown();
 
-    Collection<Client> getClients();
+    Collection<Remote> getClients();
 
     public interface ExceptionListener {
-        void onExceptionCaught(Client client, Exception e);
+        void onExceptionCaught(Remote remote, Exception e);
     }
 
     public interface ClientListener {
-        void onClientConnect(Client client);
+        void onClientConnect(Remote remote);
 
-        void onClientDisconnect(Client client);
+        void onClientDisconnect(Remote remote);
     }
 }

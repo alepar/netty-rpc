@@ -2,7 +2,7 @@ package ru.alepar.rpc;
 
 import java.io.Serializable;
 
-public interface Client {
+public interface Remote {
     
     Id getId();
     ProxyFactory getProxyFactory();
@@ -11,7 +11,7 @@ public interface Client {
     public interface Id extends Serializable {}
     
     public interface ProxyFactory {
-        <T> T getImplementation(Class<T> clazz);
+        <T> T getProxy(Class<T> clazz);
     }
     
 

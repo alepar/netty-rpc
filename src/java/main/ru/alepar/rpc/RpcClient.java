@@ -7,7 +7,7 @@ public interface RpcClient {
 
     void addExceptionListener(ExceptionListener listener);
 
-    Client.Id getClientId();
+    Remote.Id getClientId();
 
     void shutdown();
 

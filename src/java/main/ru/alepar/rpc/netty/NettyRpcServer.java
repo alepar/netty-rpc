@@ -27,7 +27,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.alepar.rpc.Client;
+import ru.alepar.rpc.Remote;
 import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.TransportException;
@@ -68,8 +68,8 @@ public class NettyRpcServer implements RpcServer {
         
         addExceptionListener(new ExceptionListener() {
             @Override
-            public void onExceptionCaught(Client client, Exception e) {
-                log.error("server caught an exception from " + client.toString(), e);
+            public void onExceptionCaught(Remote remote, Exception e) {
+                log.error("server caught an exception from " + remote.toString(), e);
             }
         });
 
@@ -143,41 +143,41 @@ public class NettyRpcServer implements RpcServer {
     }
 
     @Override
-    public Client getClient(Client.Id clientId) {
+    public Remote getClient(Remote.Id clientId) {
         return clients.getClient(clientId);
     }
 
     @Override
-    public Collection<Client> getClients() {
+    public Collection<Remote> getClients() {
         return clients.getClients();
     }
 
-    private void fireException(Client client, Exception exc) {
+    private void fireException(Remote remote, Exception exc) {
         for (ExceptionListener listener : exceptionListeners) {
             try {
-                listener.onExceptionCaught(client, exc);
+                listener.onExceptionCaught(remote, exc);
             } catch (Exception e) {
                 log.error("exception listener " + listener + " threw exception", e);
             }
         }
     }
 
-    private void fireClientConnect(Client client) {
+    private void fireClientConnect(Remote remote) {
         for (ClientListener listener : clientListeners) {
             try {
-                listener.onClientConnect(client);
+                listener.onClientConnect(remote);
             } catch (Exception e) {
-                log.error("client listener " + listener + " threw exception", e);
+                log.error("remote listener " + listener + " threw exception", e);
             }
         }
     }
 
-    private void fireClientDisconnect(Client client) {
+    private void fireClientDisconnect(Remote remote) {
         for (ClientListener listener : clientListeners) {
             try {
-                listener.onClientDisconnect(client);
+                listener.onClientDisconnect(remote);
             } catch (Exception e) {
-                log.error("client listener " + listener + " threw exception", e);
+                log.error("remote listener " + listener + " threw exception", e);
             }
         }
     }
