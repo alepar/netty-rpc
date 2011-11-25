@@ -56,16 +56,16 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>rpc/src/java/main</sourceDirectory>
-        <testSourceDirectory>rpc/src/java/test</testSourceDirectory>
+        <sourceDirectory>src/java/main</sourceDirectory>
+        <testSourceDirectory>src/java/test</testSourceDirectory>
         <resources>
             <resource>
-                <directory>rpc/resources/java/main</directory>
+                <directory>resources/java/main</directory>
             </resource>
         </resources>
         <testResources>
             <testResource>
-                <directory>rpc/resources/java/test</directory>
+                <directory>resources/java/test</directory>
             </testResource>
         </testResources>
 
