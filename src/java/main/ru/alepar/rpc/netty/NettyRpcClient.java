@@ -45,7 +45,7 @@ public class NettyRpcClient implements RpcClient {
     private final CountDownLatch latch;
 
     private Remote.Id clientId;
-    private final Thread keepAliveThread;
+    private final ClientKeepAliveThread keepAliveThread;
 
     public NettyRpcClient(final InetSocketAddress remoteAddress) {
         this(remoteAddress, 30000l);
@@ -82,25 +82,13 @@ public class NettyRpcClient implements RpcClient {
             throw new RuntimeException("interrupted waiting for handshake", e);
         }
 
-        keepAliveThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (!Thread.interrupted()) {
-                        channel.write(new KeepAlive());
-                        Thread.sleep(keepalivePeriod);
-                    }
-                } catch (InterruptedException ignored) {
-                }
-                log.warn("NettyRpcClient-KeepAlive interrupted");
-            }
-        }, "NettyRpcClient-KeepAlive");
+        keepAliveThread = new ClientKeepAliveThread(channel, keepalivePeriod);
         keepAliveThread.start();
     }
 
     @Override
     public void shutdown() {
-        keepAliveThread.interrupt();
+        keepAliveThread.safeInterrupt();
         channel.close().awaitUninterruptibly();
         bootstrap.releaseExternalResources();
     }

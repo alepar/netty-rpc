@@ -46,6 +46,7 @@ public class NettyRpcServer implements RpcServer {
 
     private final ClientRepository clients = new ClientRepository();
     private final Channel acceptChannel;
+    private ServerKeepAliveThread keepAliveThread;
 
     public NettyRpcServer(final InetSocketAddress bindAddress) {
         this(bindAddress, 30000l);
@@ -73,27 +74,15 @@ public class NettyRpcServer implements RpcServer {
             }
         });
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (!Thread.interrupted()) {
-                        for (Channel channel : clients.getChannels()) {
-                            channel.write(new KeepAlive());
-                        }
-                        Thread.sleep(keepalivePeriod);
-                    }
-                } catch (InterruptedException ignored) {}
-                log.warn("NettyRpcServer-KeepAlive interrupted");
-            }
-        }, "NettyRpcServer-KeepAlive").start();
-
+        keepAliveThread = new ServerKeepAliveThread(clients, keepalivePeriod);
         acceptChannel = bootstrap.bind(bindAddress);
     }
 
     @Override
     public void shutdown() {
         try {
+            keepAliveThread.safeInterrupt();
+
             // close main channel
             acceptChannel.close().await();
 
