@@ -2,11 +2,9 @@ package ru.alepar.rpc.api;
 
 public interface RpcClient {
     <T> T getImplementation(Class<T> clazz);
-
-    Remote.Id getClientId();
+    
+    Remote getRemote();
 
     void shutdown();
-
-    boolean isWritable();
 
 }

@@ -413,7 +413,7 @@ public class NettyRpcClientServerTest {
         final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
 
         try {
-            assertThat(server.getClient(client.getClientId()), not(nullValue()));
+            assertThat(server.getClient(client.getRemote().getId()), not(nullValue()));
         } finally {
             client.shutdown();
             server.shutdown();

@@ -32,6 +32,11 @@ public class NettyRemote implements Remote, Serializable {
         return channel.getRemoteAddress().toString();
     }
 
+    @Override
+    public boolean isWritable() {
+        return channel.isWritable();
+    }
+
     public Channel getChannel() {
         return channel;
     }
