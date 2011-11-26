@@ -16,6 +16,7 @@ import java.io.Serializable;
 import static java.lang.Thread.sleep;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
+import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
 
 @RunWith(JMock.class)
 public class NettyRpcClientServerTest {
@@ -49,7 +50,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -94,7 +95,7 @@ public class NettyRpcClientServerTest {
         try {
             proxy.go();
             proxy.go();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -119,7 +120,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go(param);
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -145,7 +146,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go(paramInt, paramLong);
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -170,7 +171,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go((Serializable) s);
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -222,7 +223,7 @@ public class NettyRpcClientServerTest {
         try {
             proxy.hang();
             server.shutdown();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
             assertThat(listener.lastException(), notNullValue());
             assertThat(listener.lastException().getClass(), equalTo((Class)TransportException.class));
         } finally {
@@ -255,7 +256,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -288,7 +289,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -316,7 +317,7 @@ public class NettyRpcClientServerTest {
 
         try {
             proxy.go(MSG);
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
         } finally {
             client.shutdown();
             server.shutdown();
@@ -341,7 +342,7 @@ public class NettyRpcClientServerTest {
         try {
             serverStateProxy.set(MSG);
             serverStateProxy.get();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
             assertThat(clientState.state, equalTo(MSG));
         } finally {
             client.shutdown();
@@ -375,7 +376,7 @@ public class NettyRpcClientServerTest {
             proxyTwo.set(MSG2);
             proxyOne.get();
             proxyTwo.get();
-            Config.giveTimeForMessagesToBeProcessed();
+            giveTimeForMessagesToBeProcessed();
             assertThat(clientOneState.state, equalTo(MSG1));
             assertThat(clientTwoState.state, equalTo(MSG2));
         } finally {
@@ -403,7 +404,7 @@ public class NettyRpcClientServerTest {
         }});
 
         client.shutdown();
-        Config.giveTimeForMessagesToBeProcessed();
+        giveTimeForMessagesToBeProcessed();
         server.shutdown();
     }
 

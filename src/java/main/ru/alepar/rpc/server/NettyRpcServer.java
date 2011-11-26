@@ -128,7 +128,7 @@ public class NettyRpcServer implements RpcServer {
         }
     }
 
-    private class RpcHandler extends SimpleChannelHandler {
+    private class RpcHandler extends SimpleChannelHandler implements RpcMessage.Visitor {
 
         private final ConcurrentMap<Class<?>, Object> cache = new ConcurrentHashMap<Class<?>, Object> ();
 
@@ -149,48 +149,58 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            Object message = e.getMessage();
+            RpcMessage message = (RpcMessage) e.getMessage();
             log.debug("server got message {} from {}", message.toString(), ctx.getChannel().toString());
-
-            if (message instanceof InvocationRequest) {
-                processRequest(ctx, e, (InvocationRequest) message);
-            } else if(message instanceof ExceptionNotify) {
-                fireException(remote, ((ExceptionNotify) message).exc);
-            } else if(message instanceof HandshakeFromClient) {
-                ctx.getChannel().write(new HandshakeFromServer(remote.getId()));
-            } else if(message instanceof KeepAlive) {
-                // ignore
-            } else {
-                log.error("got unknown message from the channel: {}", message);
-            }
+            message.visit(this);
         }
 
-        private void processRequest(ChannelHandlerContext ctx, MessageEvent e, InvocationRequest message) {
+        @Override
+        public void acceptExceptionNotify(ExceptionNotify msg) {
+            fireException(remote, msg.exc);
+        }
+
+        @Override
+        public void acceptHandshakeFromClient(HandshakeFromClient msg) {
+            remote.getChannel().write(new HandshakeFromServer(remote.getId()));
+        }
+
+        @Override
+        public void acceptHandshakeFromServer(HandshakeFromServer msg) {
+            // ignore // shudn't happen
+        }
+
+        @Override
+        public void acceptInvocationRequest(InvocationRequest msg) {
             try {
-                Class clazz = Class.forName(message.className);
-                Object impl = getImplementation(ctx, clazz);
-                invokeMethod(message, clazz, impl);
+                Class clazz = Class.forName(msg.className);
+                Object impl = getImplementation(clazz);
+                invokeMethod(msg, clazz, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
-                e.getChannel().write(new ExceptionNotify(exc));
+                remote.getChannel().write(new ExceptionNotify(exc));
             }
         }
 
-        private Object getImplementation(ChannelHandlerContext ctx, Class clazz) {
+        @Override
+        public void acceptKeepAlive(KeepAlive msg) {
+            // ignore
+        }
+
+        private Object getImplementation(Class clazz) {
             Object impl = cache.get(clazz);
             if (impl == null) {
-                impl = createImplementation(ctx, clazz);
+                impl = createImplementation(clazz);
                 cache.put(clazz, impl);
             }
             return impl;
         }
 
-        private Object createImplementation(ChannelHandlerContext ctx, Class clazz) {
+        private Object createImplementation(Class clazz) {
             ServerProvider<?> provider = implementations.get(clazz);
             if(provider == null) {
                 throw new RuntimeException("interface is not registered on server: " + clazz.getCanonicalName());
             }
-            return provider.provideFor(ctx.getChannel());
+            return provider.provideFor(remote.getChannel());
         }
 
         @Override
