@@ -17,6 +17,11 @@ public class InvocationRequest extends RpcMessage {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.acceptInvocationRequest(this);
+    }
+
+    @Override
     public String toString() {
         return "InvocationRequest{" +
                 "className='" + className + '\'' +

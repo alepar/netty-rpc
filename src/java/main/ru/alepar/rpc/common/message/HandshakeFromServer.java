@@ -11,6 +11,11 @@ public class HandshakeFromServer extends RpcMessage {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.acceptHandshakeFromServer(this);
+    }
+
+    @Override
     public String toString() {
         return "HandshakeFromServer{" +
                 "clientId=" + clientId +

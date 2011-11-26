@@ -9,6 +9,11 @@ public class ExceptionNotify extends RpcMessage {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.acceptExceptionNotify(this);
+    }
+
+    @Override
     public String toString() {
         return "ExceptionNotify{" +
                 "exc=" + exc +
