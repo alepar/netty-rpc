@@ -30,15 +30,15 @@ public class NettyRpcServer implements RpcServer {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
+    private final ServerKeepAliveThread keepAliveThread;
+    private final ClientRepository clients = new ClientRepository();
+
+    private final Map<Class<?>, ServerProvider<?>> implementations;
     private final ExceptionListener[] exceptionListeners;
     private final ClientListener[] clientListeners;
 
-    private final Map<Class<?>, ServerProvider<?>> implementations;
     private final ServerBootstrap bootstrap;
-
-    private final ClientRepository clients = new ClientRepository();
     private final Channel acceptChannel;
-    private ServerKeepAliveThread keepAliveThread;
 
     public NettyRpcServer(final InetSocketAddress bindAddress, Map<Class<?>, ServerProvider<?>> implementations, ExceptionListener[] exceptionListeners, ClientListener[] clientListeners, final long keepalivePeriod) {
         this.exceptionListeners = exceptionListeners;

@@ -30,11 +30,13 @@ public class NettyRpcClient implements RpcClient {
 
     private final ClientKeepAliveThread keepAliveThread;
     private final InvocationHandler handler = new ClientProxyHandler();
-    private final ClientBootstrap bootstrap;
+
     private final Map<Class<?>, Object> implementations;
     private final ExceptionListener[] listeners;
 
+    private final ClientBootstrap bootstrap;
     private final NettyClientRemote remote;
+
     private final CountDownLatch latch;
 
     public NettyRpcClient(final InetSocketAddress remoteAddress, Map<Class<?>, Object> implementations, ExceptionListener[] listeners, final long keepalivePeriod) {
