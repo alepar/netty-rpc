@@ -10,7 +10,7 @@ import java.lang.reflect.Proxy;
 
 import static ru.alepar.rpc.common.Util.*;
 
-public class FeedbackProxyFactory implements Remote.ProxyFactory {
+class FeedbackProxyFactory implements Remote.ProxyFactory {
 
     private final Channel clientChannel;
 
