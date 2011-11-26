@@ -462,7 +462,7 @@ public class NettyRpcClientServerTest {
 
         @Override
         public void go(String msg) {
-            ClientApi clientProxy = remote.getProxyFactory().getProxy(ClientApi.class);
+            ClientApi clientProxy = remote.getProxy(ClientApi.class);
             clientProxy.feedback(msg);
         }
     }
@@ -482,7 +482,7 @@ public class NettyRpcClientServerTest {
         @Override
         public void go() {
             try {
-                remote.getProxyFactory().getProxy(ThrowableThrower.class).go();
+                remote.getProxy(ThrowableThrower.class).go();
             } catch (Throwable ignored) {
                 ignored.printStackTrace();
             }
@@ -510,7 +510,7 @@ public class NettyRpcClientServerTest {
 
         @Override
         public void get() {
-            remote.getProxyFactory().getProxy(State.class).set(state);
+            remote.getProxy(State.class).set(state);
         }
     }
 

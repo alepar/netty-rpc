@@ -2,29 +2,34 @@ package ru.alepar.rpc.common;
 
 import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.Remote;
+import ru.alepar.rpc.common.message.InvocationRequest;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+import static ru.alepar.rpc.common.Util.*;
 
 public class NettyRemote implements Remote, Serializable {
 
     private final Channel channel;
-    private final FeedbackProxyFactory proxyFactory;
     private final NettyId clientId;
 
     public NettyRemote(Channel channel) {
         this.channel = channel;
-        this.proxyFactory = new FeedbackProxyFactory(this.channel);
         this.clientId = new NettyId(this.channel.getId());
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked"})
+    public <T> T getProxy(Class<T> clazz) {
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new ProxyHandler());
     }
 
     @Override
     public Id getId() {
         return clientId;
-    }
-
-    @Override
-    public ProxyFactory getProxyFactory() {
-        return proxyFactory;
     }
 
     @Override
@@ -78,7 +83,7 @@ public class NettyRemote implements Remote, Serializable {
         return result;
     }
 
-    static class NettyId implements Id {
+    private static class NettyId implements Id {
         private final int id;
 
         public NettyId(int id) {
@@ -106,4 +111,16 @@ public class NettyRemote implements Remote, Serializable {
             return toHexString(toByteArray(id));
         }
     }
+
+    private class ProxyHandler implements InvocationHandler {
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            validateMethod(method);
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
+            return null;
+        }
+
+    }
+
 }
