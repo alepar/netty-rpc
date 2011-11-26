@@ -17,15 +17,15 @@ public class NettyRpcServerBuilder {
     private final InetSocketAddress bindAddress;
 
     private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
-    private final List<RpcServer.ExceptionListener> exceptionListeners = new ArrayList<RpcServer.ExceptionListener>();
-    private final List<RpcServer.ClientListener> clientListeners = new ArrayList<RpcServer.ClientListener>();
+    private final List<ExceptionListener> exceptionListeners = new ArrayList<ExceptionListener>();
+    private final List<ClientListener> clientListeners = new ArrayList<ClientListener>();
 
     private long keepAlivePeriod = 30000l;
 
     public NettyRpcServerBuilder(InetSocketAddress bindAddress) {
         this.bindAddress = bindAddress;
 
-        new RpcServer.ExceptionListener() {
+        new ExceptionListener() {
             private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
             @Override
             public void onExceptionCaught(Remote remote, Exception e) {
@@ -49,12 +49,12 @@ public class NettyRpcServerBuilder {
         return this;
     }
 
-    public NettyRpcServerBuilder addExceptionListener(RpcServer.ExceptionListener listener) {
+    public NettyRpcServerBuilder addExceptionListener(ExceptionListener listener) {
         exceptionListeners.add(listener);
         return this;
     }
 
-    public NettyRpcServerBuilder addClientListener(RpcServer.ClientListener listener) {
+    public NettyRpcServerBuilder addClientListener(ClientListener listener) {
         clientListeners.add(listener);
         return this;
     }
@@ -68,8 +68,8 @@ public class NettyRpcServerBuilder {
         return new NettyRpcServer(
                 bindAddress,
                 unmodifiableMap(implementations), 
-                exceptionListeners.toArray(new RpcServer.ExceptionListener[exceptionListeners.size()]), 
-                clientListeners.toArray(new RpcServer.ClientListener[clientListeners.size()]),
+                exceptionListeners.toArray(new ExceptionListener[exceptionListeners.size()]),
+                clientListeners.toArray(new ClientListener[clientListeners.size()]),
                 keepAlivePeriod
         );
     }

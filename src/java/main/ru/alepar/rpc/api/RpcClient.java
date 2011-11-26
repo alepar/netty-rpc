@@ -9,7 +9,4 @@ public interface RpcClient {
 
     boolean isWritable();
 
-    interface ExceptionListener {
-        void onExceptionCaught(Exception e);
-    }
 }

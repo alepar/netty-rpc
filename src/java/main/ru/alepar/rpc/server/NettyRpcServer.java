@@ -7,6 +7,8 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.api.ClientListener;
+import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcServer;
 import ru.alepar.rpc.api.exception.TransportException;

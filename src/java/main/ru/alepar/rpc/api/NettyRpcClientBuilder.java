@@ -15,7 +15,7 @@ public class NettyRpcClientBuilder {
     private final InetSocketAddress serverAddress;
 
     private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
-    private final List<RpcClient.ExceptionListener> listeners = new ArrayList<RpcClient.ExceptionListener>();
+    private final List<ExceptionListener> listeners = new ArrayList<ExceptionListener>();
 
     private long keepAlivePeriod = 30000l;
 
@@ -28,7 +28,7 @@ public class NettyRpcClientBuilder {
         return this;
     }
     
-    public NettyRpcClientBuilder addExceptionListener(RpcClient.ExceptionListener listener) {
+    public NettyRpcClientBuilder addExceptionListener(ExceptionListener listener) {
         listeners.add(listener);
         return this;
     }    
@@ -42,7 +42,7 @@ public class NettyRpcClientBuilder {
         return new NettyRpcClient(
                 serverAddress,
                 unmodifiableMap(implementations),
-                listeners.toArray(new RpcClient.ExceptionListener[listeners.size()]),
+                listeners.toArray(new ExceptionListener[listeners.size()]),
                 keepAlivePeriod
         );
     }

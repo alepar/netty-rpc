@@ -7,6 +7,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.exception.TransportException;
@@ -101,7 +102,7 @@ public class NettyRpcClient implements RpcClient {
     private void fireException(Exception exc) {
         for (ExceptionListener listener : listeners) {
             try {
-                listener.onExceptionCaught(exc);
+                listener.onExceptionCaught(null, exc);
             } catch (Exception e) {
                 log.error("exception listener " + listener + " threw exception", exc);
             }

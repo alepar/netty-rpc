@@ -239,9 +239,9 @@ public class NettyRpcClientServerTest {
                 throw new IllegalAccessException("some exception");
             }
         };
-        final RpcClient.ExceptionListener listener = mockery.mock(RpcClient.ExceptionListener.class);
+        final ExceptionListener listener = mockery.mock(ExceptionListener.class);
         mockery.checking(new Expectations(){{
-            one(listener).onExceptionCaught(with(any(RemoteException.class)));
+            one(listener).onExceptionCaught(with(any(Remote.class)), with(any(RemoteException.class)));
         }});
 
         final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
@@ -252,7 +252,6 @@ public class NettyRpcClientServerTest {
                 .addExceptionListener(listener)
                 .build();
         final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
-
 
         try {
             proxy.go();
@@ -271,7 +270,7 @@ public class NettyRpcClientServerTest {
                 throw new IllegalAccessException("some exception");
             }
         };
-        final RpcServer.ExceptionListener listener = mockery.mock(RpcServer.ExceptionListener.class);
+        final ExceptionListener listener = mockery.mock(ExceptionListener.class);
         mockery.checking(new Expectations() {{
             one(listener).onExceptionCaught(with(any(Remote.class)), with(any(RemoteException.class)));
         }});
@@ -388,7 +387,7 @@ public class NettyRpcClientServerTest {
 
     @Test(timeout = Config.TIMEOUT)
     public void serverNotifiesAboutClientConnectsAndDisconnects() throws Exception {
-        final RpcServer.ClientListener mock = mockery.mock(RpcServer.ClientListener.class);
+        final ClientListener mock = mockery.mock(ClientListener.class);
         final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
                 .addClientListener(mock)
                 .build();
@@ -528,11 +527,11 @@ public class NettyRpcClientServerTest {
         public void get() { }
     }
 
-    public static class ExceptionSavingListener implements RpcClient.ExceptionListener {
+    public static class ExceptionSavingListener implements ExceptionListener {
         private volatile Exception lastException;
 
         @Override
-        public void onExceptionCaught(Exception e) {
+        public void onExceptionCaught(Remote remote, Exception e) {
             this.lastException = e;
         }
 
