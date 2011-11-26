@@ -98,7 +98,7 @@ public class NettyRpcClient implements RpcClient {
     private void fireException(Exception exc) {
         for (ExceptionListener listener : listeners) {
             try {
-                listener.onExceptionCaught(null, exc);
+                listener.onExceptionCaught(remote, exc);
             } catch (Exception e) {
                 log.error("exception listener " + listener + " threw exception", exc);
             }
