@@ -1,26 +1,7 @@
 package ru.alepar.rpc.netty;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
@@ -30,8 +11,15 @@ import ru.alepar.rpc.Remote;
 import ru.alepar.rpc.RpcClient;
 import ru.alepar.rpc.exception.TransportException;
 
-import static ru.alepar.rpc.netty.Util.invokeMethod;
-import static ru.alepar.rpc.netty.Util.validateMethod;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+
+import static ru.alepar.rpc.netty.Util.*;
 
 public class NettyRpcClient implements RpcClient {
 
@@ -40,18 +28,17 @@ public class NettyRpcClient implements RpcClient {
     private final InvocationHandler handler = new ClientProxyHandler();
     private final Channel channel;
     private final ClientBootstrap bootstrap;
-    private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
-    private final List<ExceptionListener> listeners = new CopyOnWriteArrayList<ExceptionListener>();
+    private final Map<Class<?>, Object> implementations;
+    private final ExceptionListener[] listeners;
     private final CountDownLatch latch;
 
     private Remote.Id clientId;
     private final ClientKeepAliveThread keepAliveThread;
 
-    public NettyRpcClient(final InetSocketAddress remoteAddress) {
-        this(remoteAddress, 30000l);
-    }
+    public NettyRpcClient(final InetSocketAddress remoteAddress, Map<Class<?>, Object> implementations, ExceptionListener[] listeners, final long keepalivePeriod) {
+        this.implementations = implementations;
+        this.listeners = listeners;
 
-    public NettyRpcClient(final InetSocketAddress remoteAddress, final long keepalivePeriod) {
         bootstrap = new ClientBootstrap(
                 new NioClientSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -94,19 +81,9 @@ public class NettyRpcClient implements RpcClient {
     }
 
     @Override
-    public <T> void addImplementation(Class<T> interfaceClass, T implObject) {
-        implementations.put(interfaceClass, implObject);
-    }
-
-    @Override
     @SuppressWarnings({"unchecked"})
     public <T> T getImplementation(Class<T> clazz) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, handler);
-    }
-
-    @Override
-    public void addExceptionListener(ExceptionListener listener) {
-        listeners.add(listener);
     }
 
     @Override

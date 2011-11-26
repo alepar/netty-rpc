@@ -1,36 +1,24 @@
 package ru.alepar.rpc.netty;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.Remote;
-import ru.alepar.rpc.ImplementationFactory;
 import ru.alepar.rpc.RpcServer;
 import ru.alepar.rpc.exception.TransportException;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
 
 import static ru.alepar.rpc.netty.Util.invokeMethod;
 
@@ -38,21 +26,20 @@ public class NettyRpcServer implements RpcServer {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
-    private List<ExceptionListener> exceptionListeners = new CopyOnWriteArrayList<ExceptionListener>();
-    private final List<ClientListener> clientListeners = new CopyOnWriteArrayList<ClientListener>();
+    private final ExceptionListener[] exceptionListeners;
+    private final ClientListener[] clientListeners;
 
-    private final Map<Class<?>, ServerProvider<?>> implementations = new HashMap<Class<?>, ServerProvider<?>>();
+    private final Map<Class<?>, ServerProvider<?>> implementations;
     private final ServerBootstrap bootstrap;
 
     private final ClientRepository clients = new ClientRepository();
     private final Channel acceptChannel;
     private ServerKeepAliveThread keepAliveThread;
 
-    public NettyRpcServer(final InetSocketAddress bindAddress) {
-        this(bindAddress, 30000l);
-    }
-
-    public NettyRpcServer(final InetSocketAddress bindAddress, final long keepalivePeriod) {
+    public NettyRpcServer(final InetSocketAddress bindAddress, Map<Class<?>, ServerProvider<?>> implementations, ExceptionListener[] exceptionListeners, ClientListener[] clientListeners, final long keepalivePeriod) {
+        this.exceptionListeners = exceptionListeners;
+        this.clientListeners = clientListeners;
+        this.implementations = implementations;
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -67,13 +54,6 @@ public class NettyRpcServer implements RpcServer {
             }
         });
         
-        addExceptionListener(new ExceptionListener() {
-            @Override
-            public void onExceptionCaught(Remote remote, Exception e) {
-                log.error("server caught an exception from " + remote.toString(), e);
-            }
-        });
-
         keepAliveThread = new ServerKeepAliveThread(clients, keepalivePeriod);
         acceptChannel = bootstrap.bind(bindAddress);
     }
@@ -104,31 +84,6 @@ public class NettyRpcServer implements RpcServer {
         } catch (InterruptedException e) {
             throw new RuntimeException("failed to shutdown properly", e);
         }
-    }
-
-    @Override
-    public <T> void addImplementation(Class<T> interfaceClass, T impl) {
-        implementations.put(interfaceClass, new SimpleServerProvider<T>(impl));
-    }
-
-    @Override
-    public <T> void addClass(Class<T> interfaceClass, Class<? extends T> implClass) {
-        implementations.put(interfaceClass, new InjectingServerProvider<T>(implClass));
-    }
-
-    @Override
-    public <T> void addFactory(Class<T> interfaceClass, ImplementationFactory<? extends T> factory) {
-        implementations.put(interfaceClass, new FactoryServerProvider<T>(factory));
-    }
-
-    @Override
-    public void addExceptionListener(ExceptionListener listener) {
-        exceptionListeners.add(listener);
-    }
-
-    @Override
-    public void addClientListener(ClientListener listener) {
-        clientListeners.add(listener);
     }
 
     @Override

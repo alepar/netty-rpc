@@ -1,13 +1,13 @@
 package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
-import ru.alepar.rpc.Remote;
 import ru.alepar.rpc.Inject;
+import ru.alepar.rpc.Remote;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 
-class InjectingServerProvider<T> implements ServerProvider {
+public class InjectingServerProvider<T> implements ServerProvider {
 
     private final Class<? extends T> implClass;
 

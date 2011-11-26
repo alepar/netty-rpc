@@ -2,7 +2,7 @@ package ru.alepar.rpc.netty;
 
 import org.jboss.netty.channel.Channel;
 
-class SimpleServerProvider<T> implements ServerProvider<T> {
+public class SimpleServerProvider<T> implements ServerProvider<T> {
     private final T impl;
 
     public SimpleServerProvider(T impl) {

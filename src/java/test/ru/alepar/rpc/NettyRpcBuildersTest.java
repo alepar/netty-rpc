@@ -1,0 +1,47 @@
+package ru.alepar.rpc;
+
+import org.jmock.Expectations;
+import org.jmock.Mockery;
+import org.jmock.integration.junit4.JUnit4Mockery;
+import org.junit.Test;
+import ru.alepar.rpc.netty.Config;
+
+import static ru.alepar.rpc.netty.Config.giveTimeForMessagesToBeProcessed;
+
+public class NettyRpcBuildersTest {
+
+    private final Mockery mockery = new JUnit4Mockery();
+
+    @Test
+    public void buildersCreateClientAndServerWhichCanTalk() throws Exception {
+        final ServerRemote mock = mockery.mock(ServerRemote.class);
+        mockery.checking(new Expectations() {{
+            one(mock).call();
+        }});
+        
+        final NettyRpcServerBuilder serverBuilder = new NettyRpcServerBuilder(Config.BIND_ADDRESS);
+        final NettyRpcClientBuilder clientBuilder = new NettyRpcClientBuilder(Config.BIND_ADDRESS);
+
+        RpcServer server = serverBuilder
+                .addObject(ServerRemote.class, mock)
+                .enableKeepAlive(50l)
+                .build();
+
+        RpcClient client = clientBuilder
+                .enableKeepAlive(50l)
+                .build();
+
+        try {
+            ServerRemote proxy = client.getImplementation(ServerRemote.class);
+            proxy.call();
+            giveTimeForMessagesToBeProcessed();
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    public interface ServerRemote {
+        void call();
+    }
+}

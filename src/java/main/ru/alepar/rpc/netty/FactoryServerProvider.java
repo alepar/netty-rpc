@@ -3,7 +3,7 @@ package ru.alepar.rpc.netty;
 import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.ImplementationFactory;
 
-class FactoryServerProvider<T> implements ServerProvider<T> {
+public class FactoryServerProvider<T> implements ServerProvider<T> {
 
     private final ImplementationFactory<? extends T> factory;
 
