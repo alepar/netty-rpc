@@ -4,9 +4,12 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Test;
-import ru.alepar.rpc.netty.Config;
+import ru.alepar.rpc.api.NettyRpcClientBuilder;
+import ru.alepar.rpc.api.NettyRpcServerBuilder;
+import ru.alepar.rpc.api.RpcClient;
+import ru.alepar.rpc.api.RpcServer;
 
-import static ru.alepar.rpc.netty.Config.giveTimeForMessagesToBeProcessed;
+import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
 
 public class NettyRpcBuildersTest {
 
