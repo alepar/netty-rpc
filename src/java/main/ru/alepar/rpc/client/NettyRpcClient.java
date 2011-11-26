@@ -117,27 +117,42 @@ public class NettyRpcClient implements RpcClient {
         }
     }
 
-    private class RpcHandler extends SimpleChannelHandler {
+    private class RpcHandler extends SimpleChannelHandler implements RpcMessage.Visitor {
+
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            Object message = e.getMessage();
+            RpcMessage message = (RpcMessage) e.getMessage();
             log.debug("client got message {}", message.toString());
-
-            if(message instanceof InvocationRequest) {
-                processRequest(e, (InvocationRequest) message);
-            } else if (message instanceof ExceptionNotify) {
-                fireException(((ExceptionNotify) message).exc);
-            } else if(message instanceof HandshakeFromServer) {
-                clientId = ((HandshakeFromServer)message).clientId;
-                latch.countDown();
-            } else if(message instanceof KeepAlive) {
-                // ignore
-            } else {
-                log.error("got unknown message from the channel: {}", message);
-            }
+            message.visit(this);
         }
 
-        private void processRequest(MessageEvent e, InvocationRequest msg) {
+        @Override
+        public void acceptExceptionNotify(ExceptionNotify msg) {
+            fireException(msg.exc);
+        }
+
+        @Override
+        public void acceptHandshakeFromClient(HandshakeFromClient msg) {
+            // ignore // shudn't happen
+        }
+
+        @Override
+        public void acceptHandshakeFromServer(HandshakeFromServer msg) {
+            clientId = msg.clientId;
+            latch.countDown();
+        }
+
+        @Override
+        public void acceptInvocationRequest(InvocationRequest msg) {
+            processRequest(msg);
+        }
+
+        @Override
+        public void acceptKeepAlive(KeepAlive msg) {
+            // ignore
+        }
+
+        private void processRequest(InvocationRequest msg) {
             try {
                 Class clazz = Class.forName(msg.className);
                 Object impl = getImplementation(msg, clazz);
@@ -145,7 +160,7 @@ public class NettyRpcClient implements RpcClient {
                 invokeMethod(msg, clazz, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
-                e.getChannel().write(new ExceptionNotify(exc));
+                channel.write(new ExceptionNotify(exc));
             }
         }
 
