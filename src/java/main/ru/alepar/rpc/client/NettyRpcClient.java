@@ -147,15 +147,6 @@ public class NettyRpcClient implements RpcClient {
 
         @Override
         public void acceptInvocationRequest(InvocationRequest msg) {
-            processRequest(msg);
-        }
-
-        @Override
-        public void acceptKeepAlive(KeepAlive msg) {
-            // ignore
-        }
-
-        private void processRequest(InvocationRequest msg) {
             try {
                 Class clazz = Class.forName(msg.className);
                 Object impl = getImplementation(msg, clazz);
@@ -165,6 +156,11 @@ public class NettyRpcClient implements RpcClient {
                 log.error("caught exception while trying to invoke implementation", exc);
                 channel.write(new ExceptionNotify(exc));
             }
+        }
+
+        @Override
+        public void acceptKeepAlive(KeepAlive msg) {
+            // ignore
         }
 
         private Object getImplementation(InvocationRequest msg, Class clazz) {
