@@ -7,7 +7,7 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import ru.alepar.rpc.api.*;
-import ru.alepar.rpc.api.exception.ProtocolException;
+import ru.alepar.rpc.api.exception.ConfigurationException;
 import ru.alepar.rpc.api.exception.RemoteException;
 import ru.alepar.rpc.api.exception.TransportException;
 
@@ -57,7 +57,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT, expected = ProtocolException.class)
+    @Test(timeout = Config.TIMEOUT, expected = ConfigurationException.class)
     public void doNotAllowMethodsWithNonVoidReturnTypeToBeProxied() throws Exception {
         final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
 
@@ -178,7 +178,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT, expected = ProtocolException.class)
+    @Test(timeout = Config.TIMEOUT, expected = ConfigurationException.class)
     public void throwsProtocolExceptionIfCannotSerializeParams() throws Exception {
         final NonSerializable impl = mockery.mock(NonSerializable.class);
 
@@ -420,7 +420,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(expected = ProtocolException.class)
+    @Test(expected = ConfigurationException.class)
     public void getProxyOnClientForNonRegisteredOnServerInterfaceThrowsProtocolException() throws Exception {
         final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(IntegerParam.class, new IntegerParam() {  // this is optional, add some unrelated interface to complicate matters
@@ -440,7 +440,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(expected = ProtocolException.class)
+    @Test(expected = ConfigurationException.class)
     public void getProxyOnServerForNonRegisteredOnClientInterfaceThrowsProtocolException() throws Exception {
         final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS).build();
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)

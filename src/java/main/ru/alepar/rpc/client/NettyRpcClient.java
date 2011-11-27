@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
-import static ru.alepar.rpc.common.Util.*;
+import static ru.alepar.rpc.common.Util.invokeMethod;
 
 public class NettyRpcClient implements RpcClient {
 
@@ -113,7 +113,6 @@ public class NettyRpcClient implements RpcClient {
     private class ClientProxyHandler implements InvocationHandler {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            validateMethod(method);
             channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
             return null;
         }
@@ -148,10 +147,10 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public void acceptInvocationRequest(InvocationRequest msg) {
             try {
-                Class clazz = Class.forName(msg.className);
+                Class<?> clazz = Class.forName(msg.className);
                 Object impl = getImplementation(msg, clazz);
 
-                invokeMethod(msg, clazz, impl);
+                invokeMethod(msg, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
                 channel.write(new ExceptionNotify(exc));
@@ -163,7 +162,7 @@ public class NettyRpcClient implements RpcClient {
             // ignore
         }
 
-        private Object getImplementation(InvocationRequest msg, Class clazz) {
+        private Object getImplementation(InvocationRequest msg, Class<?> clazz) {
             Object impl = implementations.get(clazz);
             if(impl == null) {
                 throw new RuntimeException("interface is not registered on client: " + msg.className);

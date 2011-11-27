@@ -1,6 +1,7 @@
 package ru.alepar.rpc.api;
 
 import ru.alepar.rpc.client.NettyRpcClient;
+import ru.alepar.rpc.common.Validator;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class NettyRpcClientBuilder {
 
     private final InetSocketAddress serverAddress;
 
+    private final Validator validator = new Validator();
     private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
     private final List<ExceptionListener> listeners = new ArrayList<ExceptionListener>();
 
@@ -24,6 +26,7 @@ public class NettyRpcClientBuilder {
     }
 
     public <T> NettyRpcClientBuilder addObject(Class<T> interfaceClass, T implementingObject) {
+        validator.validateInterface(interfaceClass);
         implementations.put(interfaceClass, implementingObject);
         return this;
     }

@@ -2,7 +2,7 @@ package ru.alepar.rpc.common;
 
 import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.Remote;
-import ru.alepar.rpc.api.exception.ProtocolException;
+import ru.alepar.rpc.api.exception.ConfigurationException;
 import ru.alepar.rpc.common.message.InvocationRequest;
 
 import java.io.Serializable;
@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Set;
 
-import static ru.alepar.rpc.common.Util.*;
+import static ru.alepar.rpc.common.Util.toSerializable;
 
 public class NettyRemote implements Remote, Serializable {
 
@@ -32,7 +32,7 @@ public class NettyRemote implements Remote, Serializable {
             return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new ProxyHandler());
         }
 
-        throw new ProtocolException("no implementation on remote side for " + clazz.getCanonicalName());
+        throw new ConfigurationException("no implementation on remote side for " + clazz.getCanonicalName());
     }
 
     @Override
@@ -78,7 +78,6 @@ public class NettyRemote implements Remote, Serializable {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            validateMethod(method);
             channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
             return null;
         }

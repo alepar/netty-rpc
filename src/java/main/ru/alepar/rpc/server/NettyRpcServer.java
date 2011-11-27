@@ -174,9 +174,9 @@ public class NettyRpcServer implements RpcServer {
         @Override
         public void acceptInvocationRequest(InvocationRequest msg) {
             try {
-                Class clazz = Class.forName(msg.className);
+                Class<?> clazz = Class.forName(msg.className);
                 Object impl = getImplementation(clazz);
-                invokeMethod(msg, clazz, impl);
+                invokeMethod(msg, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
                 channel.write(new ExceptionNotify(exc));
@@ -188,7 +188,7 @@ public class NettyRpcServer implements RpcServer {
             // ignore
         }
 
-        private Object getImplementation(Class clazz) {
+        private Object getImplementation(Class<?> clazz) {
             Object impl = cache.get(clazz);
             if (impl == null) {
                 impl = createImplementation(clazz);
@@ -197,7 +197,7 @@ public class NettyRpcServer implements RpcServer {
             return impl;
         }
 
-        private Object createImplementation(Class clazz) {
+        private Object createImplementation(Class<?> clazz) {
             ServerProvider<?> provider = implementations.get(clazz);
             if(provider == null) {
                 throw new RuntimeException("interface is not registered on server: " + clazz.getCanonicalName());
