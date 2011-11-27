@@ -1,8 +1,7 @@
 package ru.alepar.rpc.server;
 
-import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.ImplementationFactory;
-import ru.alepar.rpc.common.NettyRemote;
+import ru.alepar.rpc.api.Remote;
 
 public class FactoryServerProvider<T> implements ServerProvider<T> {
 
@@ -13,7 +12,7 @@ public class FactoryServerProvider<T> implements ServerProvider<T> {
     }
 
     @Override
-    public T provideFor(Channel channel) {
-        return factory.create(new NettyRemote(channel));
+    public T provideFor(Remote remote) {
+        return factory.create(remote);
     }
 }

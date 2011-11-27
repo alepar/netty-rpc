@@ -2,29 +2,37 @@ package ru.alepar.rpc.common;
 
 import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.Remote;
+import ru.alepar.rpc.api.exception.ProtocolException;
 import ru.alepar.rpc.common.message.InvocationRequest;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Set;
 
 import static ru.alepar.rpc.common.Util.*;
 
 public class NettyRemote implements Remote, Serializable {
 
     private final Channel channel;
-    private final NettyId clientId;
+    private final Id clientId;
+    private final Set<Class<?>> classes;
 
-    public NettyRemote(Channel channel) {
+    public NettyRemote(Channel channel, Id clientId, Set<Class<?>> classes) {
         this.channel = channel;
-        this.clientId = new NettyId(this.channel.getId());
+        this.clientId = clientId;
+        this.classes = classes;
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
     public <T> T getProxy(Class<T> clazz) {
-        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new ProxyHandler());
+        if (classes.contains(clazz)) {
+            return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new ProxyHandler());
+        }
+
+        throw new ProtocolException("no implementation on remote side for " + clazz.getCanonicalName());
     }
 
     @Override
@@ -64,52 +72,6 @@ public class NettyRemote implements Remote, Serializable {
     @Override
     public String toString() {
         return "NettyRemote{" + clientId + "}";
-    }
-
-    private static String toHexString(byte[] digest) {
-        StringBuilder result = new StringBuilder();
-        for (int i =  digest.length-1; i >= 0; i--) {
-            result.append(Integer.toHexString(0xFF & (int) digest[i]));
-        }
-        return result.toString();
-    }
-
-    private static byte[] toByteArray(int l) {
-        byte[] result = new byte[4];
-        for(int i=0; i<4; i++) {
-            result[i] = (byte)(l & 0xff);
-            l = l >> 8;
-        }
-        return result;
-    }
-
-    private static class NettyId implements Id {
-        private final int id;
-
-        public NettyId(int id) {
-            this.id = id;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            NettyId that = (NettyId) o;
-
-            return id == that.id;
-
-        }
-
-        @Override
-        public int hashCode() {
-            return id;
-        }
-
-        @Override
-        public String toString() {
-            return toHexString(toByteArray(id));
-        }
     }
 
     private class ProxyHandler implements InvocationHandler {

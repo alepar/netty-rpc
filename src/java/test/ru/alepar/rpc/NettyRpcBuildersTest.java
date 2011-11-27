@@ -9,13 +9,13 @@ import ru.alepar.rpc.api.NettyRpcServerBuilder;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.RpcServer;
 
-import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
+import static ru.alepar.rpc.Config.*;
 
 public class NettyRpcBuildersTest {
 
     private final Mockery mockery = new JUnit4Mockery();
 
-    @Test
+    @Test(timeout = TIMEOUT)
     public void buildersCreateClientAndServerWhichCanTalk() throws Exception {
         final ServerRemote mock = mockery.mock(ServerRemote.class);
         mockery.checking(new Expectations() {{

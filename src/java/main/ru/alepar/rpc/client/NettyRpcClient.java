@@ -11,6 +11,7 @@ import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.exception.TransportException;
+import ru.alepar.rpc.common.NettyRemote;
 import ru.alepar.rpc.common.Util;
 import ru.alepar.rpc.common.message.*;
 
@@ -18,6 +19,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -35,7 +38,9 @@ public class NettyRpcClient implements RpcClient {
     private final ExceptionListener[] listeners;
 
     private final ClientBootstrap bootstrap;
-    private final NettyClientRemote remote;
+
+    private final Channel channel;
+    private volatile NettyRemote remote;
 
     private final CountDownLatch latch;
 
@@ -58,17 +63,15 @@ public class NettyRpcClient implements RpcClient {
         });
 
         final ChannelFuture future = bootstrap.connect(remoteAddress);
-        final Channel channel = future.awaitUninterruptibly().getChannel();
+        channel = future.awaitUninterruptibly().getChannel();
 
         if (!future.isSuccess()) {
             bootstrap.releaseExternalResources();
             throw new TransportException("failed to connect to " + remoteAddress, future.getCause());
         }
         
-        remote = new NettyClientRemote(channel);
-
         latch = new CountDownLatch(1);
-        channel.write(new HandshakeFromClient());
+        channel.write(new HandshakeFromClient(implementations.keySet()));
         try {
             latch.await();
         } catch (InterruptedException e) {
@@ -82,7 +85,7 @@ public class NettyRpcClient implements RpcClient {
     @Override
     public void shutdown() {
         keepAliveThread.safeInterrupt();
-        remote.getChannel().close().awaitUninterruptibly();
+        channel.close().awaitUninterruptibly();
         bootstrap.releaseExternalResources();
     }
 
@@ -111,7 +114,7 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             validateMethod(method);
-            remote.getChannel().write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
+            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
             return null;
         }
     }
@@ -122,6 +125,7 @@ public class NettyRpcClient implements RpcClient {
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             RpcMessage message = (RpcMessage) e.getMessage();
             log.debug("client got message {}", message.toString());
+
             message.visit(this);
         }
 
@@ -137,7 +141,7 @@ public class NettyRpcClient implements RpcClient {
 
         @Override
         public void acceptHandshakeFromServer(HandshakeFromServer msg) {
-            remote.setId(msg.clientId);
+            remote = new NettyRemote(channel, msg.clientId, new HashSet<Class<?>>(Arrays.asList(msg.classes)));
             latch.countDown();
         }
 
@@ -159,7 +163,7 @@ public class NettyRpcClient implements RpcClient {
                 invokeMethod(msg, clazz, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
-                remote.getChannel().write(new ExceptionNotify(exc));
+                channel.write(new ExceptionNotify(exc));
             }
         }
 

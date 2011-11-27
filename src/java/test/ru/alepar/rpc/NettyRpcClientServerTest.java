@@ -16,7 +16,7 @@ import java.io.Serializable;
 import static java.lang.Thread.sleep;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
-import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
+import static ru.alepar.rpc.Config.*;
 
 @RunWith(JMock.class)
 public class NettyRpcClientServerTest {
@@ -26,8 +26,8 @@ public class NettyRpcClientServerTest {
     @Test(timeout = Config.TIMEOUT)
     public void serverShutdownDoesNotHangIfThereAreStillClientsConnected() throws Exception {
         // it can hang if server does not close client channels before releasing bootstrap resources
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS).build();
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
 
         server.shutdown();
         client.shutdown();
@@ -41,11 +41,11 @@ public class NettyRpcClientServerTest {
             one(impl).go();
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(NoParamsVoidReturn.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
 
         try {
@@ -61,11 +61,11 @@ public class NettyRpcClientServerTest {
     public void doNotAllowMethodsWithNonVoidReturnTypeToBeProxied() throws Exception {
         final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(NoParamsIntegerReturn.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
 
         try {
@@ -85,11 +85,11 @@ public class NettyRpcClientServerTest {
             one(impl).go();
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(NoParamsVoidReturn.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
 
         try {
@@ -111,11 +111,11 @@ public class NettyRpcClientServerTest {
             one(impl).go(with(equalTo(param)));
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(IntegerParam.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final IntegerParam proxy = client.getImplementation(IntegerParam.class);
 
         try {
@@ -137,11 +137,11 @@ public class NettyRpcClientServerTest {
             one(impl).go(with(equalTo(paramInt)), with(equalTo(paramLong)));
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(IntLongParam.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final IntLongParam proxy = client.getImplementation(IntLongParam.class);
 
         try {
@@ -162,11 +162,11 @@ public class NettyRpcClientServerTest {
             one(impl).go(with(any(Serializable.class)));
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(OverloadedString.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final OverloadedString proxy = client.getImplementation(OverloadedString.class);
 
         try {
@@ -182,11 +182,11 @@ public class NettyRpcClientServerTest {
     public void throwsProtocolExceptionIfCannotSerializeParams() throws Exception {
         final NonSerializable impl = mockery.mock(NonSerializable.class);
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(NonSerializable.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
         final NonSerializable proxy = client.getImplementation(NonSerializable.class);
 
         try {
@@ -209,12 +209,12 @@ public class NettyRpcClientServerTest {
             }
         };
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(InfinteWaiter.class, impl)
                 .build();
 
         final ExceptionSavingListener listener = new ExceptionSavingListener();
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addExceptionListener(listener)
                 .enableKeepAlive(30l)
                 .build();
@@ -244,11 +244,11 @@ public class NettyRpcClientServerTest {
             one(listener).onExceptionCaught(with(any(Remote.class)), with(any(RemoteException.class)));
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addObject(ThrowableThrower.class, impl)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addExceptionListener(listener)
                 .build();
         final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
@@ -275,12 +275,12 @@ public class NettyRpcClientServerTest {
             one(listener).onExceptionCaught(with(any(Remote.class)), with(any(RemoteException.class)));
         }});
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addExceptionListener(listener)
                 .addClass(NoParamsVoidReturn.class, CallClientBack.class)
                 .build();
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(ThrowableThrower.class, impl)
                 .build();
 
@@ -299,7 +299,7 @@ public class NettyRpcClientServerTest {
     public void feedbackToClientWorks() throws Exception {
         final String MSG = "echoed-hi";
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addClass(SomeServerApi.class, SomeServerImpl.class)
                 .build();
 
@@ -308,7 +308,7 @@ public class NettyRpcClientServerTest {
             one(mockClient).feedback(MSG);
         }});
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(ClientApi.class, mockClient)
                 .build();
         
@@ -327,12 +327,12 @@ public class NettyRpcClientServerTest {
     public void serverImplementationsAreCachedIeStatePersistsAcrossClientCalls() throws Exception {
         final String MSG = "some state";
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addClass(State.class, ServerState.class)
                 .build();
 
         final ClientState clientState = new ClientState();
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientState)
                 .build();
         
@@ -354,18 +354,18 @@ public class NettyRpcClientServerTest {
         final String MSG1 = "one state";
         final String MSG2 = "second state";
 
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addClass(State.class, ServerState.class)
                 .build();
 
         final ClientState clientOneState = new ClientState();
-        final RpcClient clientOne = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient clientOne = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientOneState)
                 .build();
         final State proxyOne = clientOne.getImplementation(State.class);
 
         final ClientState clientTwoState = new ClientState();
-        final RpcClient clientTwo = new NettyRpcClientBuilder(Config.BIND_ADDRESS)
+        final RpcClient clientTwo = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientTwoState)
                 .build();
         final State proxyTwo = clientTwo.getImplementation(State.class);
@@ -388,7 +388,7 @@ public class NettyRpcClientServerTest {
     @Test(timeout = Config.TIMEOUT)
     public void serverNotifiesAboutClientConnectsAndDisconnects() throws Exception {
         final ClientListener mock = mockery.mock(ClientListener.class);
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS)
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
                 .addClientListener(mock)
                 .build();
 
@@ -396,7 +396,7 @@ public class NettyRpcClientServerTest {
             one(mock).onClientConnect(with(any(Remote.class))); // don't know the id yet
         }});
 
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
 
         mockery.checking(new Expectations(){{
             one(mock).onClientDisconnect(with(any(Remote.class))); // matcher, matching remote.getClientId()
@@ -409,11 +409,51 @@ public class NettyRpcClientServerTest {
 
     @Test
     public void clientAndServerShareSameId() throws Exception {
-        final RpcServer server = new NettyRpcServerBuilder(Config.BIND_ADDRESS).build();
-        final RpcClient client = new NettyRpcClientBuilder(Config.BIND_ADDRESS).build();
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
 
         try {
             assertThat(server.getClient(client.getRemote().getId()), not(nullValue()));
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(expected = ProtocolException.class)
+    public void getProxyOnClientForNonRegisteredOnServerInterfaceThrowsProtocolException() throws Exception {
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)
+                .addObject(IntegerParam.class, new IntegerParam() {  // this is optional, add some unrelated interface to complicate matters
+                    @Override
+                    public void go(Integer i) {
+                        //ignore
+                    }
+                })
+                .build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
+
+        try {
+            client.getRemote().getProxy(NoParamsVoidReturn.class);
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test(expected = ProtocolException.class)
+    public void getProxyOnServerForNonRegisteredOnClientInterfaceThrowsProtocolException() throws Exception {
+        final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS).build();
+        final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
+                .addObject(IntegerParam.class, new IntegerParam() {  // this is optional, add some unrelated interface to complicate matters
+                    @Override
+                    public void go(Integer i) {
+                        //ignore
+                    }
+                })
+                .build();
+
+        try {
+            server.getClient(client.getRemote().getId()).getProxy(NoParamsVoidReturn.class);
         } finally {
             client.shutdown();
             server.shutdown();

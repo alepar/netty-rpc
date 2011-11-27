@@ -1,6 +1,6 @@
 package ru.alepar.rpc.server;
 
-import org.jboss.netty.channel.Channel;
+import ru.alepar.rpc.api.Remote;
 
 public class SimpleServerProvider<T> implements ServerProvider<T> {
     private final T impl;
@@ -10,7 +10,7 @@ public class SimpleServerProvider<T> implements ServerProvider<T> {
     }
 
     @Override
-    public T provideFor(Channel channel) {
+    public T provideFor(Remote remote) {
         return impl;
     }
 }

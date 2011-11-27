@@ -1,9 +1,7 @@
 package ru.alepar.rpc.server;
 
-import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.Inject;
 import ru.alepar.rpc.api.Remote;
-import ru.alepar.rpc.common.NettyRemote;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -17,21 +15,21 @@ public class InjectingServerProvider<T> implements ServerProvider {
     }
 
     @Override
-    public Object provideFor(Channel channel) {
+    public Object provideFor(Remote remote) {
         try {
             Constructor<?> constructor = findConstructor();
-            return constructor.newInstance(makeArgumentsForConstructor(constructor, channel));
+            return constructor.newInstance(makeArgumentsForConstructor(constructor, remote));
         } catch (Exception e) {
             throw new RuntimeException("failed to provide implementation for " + implClass.getCanonicalName(), e);
         }
     }
 
-    private Object[] makeArgumentsForConstructor(Constructor<?> constructor, Channel channel) {
+    private Object[] makeArgumentsForConstructor(Constructor<?> constructor, Remote remote) {
         Class<?>[] parameterTypes = constructor.getParameterTypes();
         Object[] arguments = new Object[parameterTypes.length];
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            arguments[i] = new NettyRemote(channel);
+            arguments[i] = remote;
         }
 
         return arguments;

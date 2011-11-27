@@ -12,14 +12,12 @@ import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcServer;
 import ru.alepar.rpc.api.exception.TransportException;
+import ru.alepar.rpc.common.NettyId;
 import ru.alepar.rpc.common.NettyRemote;
 import ru.alepar.rpc.common.message.*;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -133,14 +131,13 @@ public class NettyRpcServer implements RpcServer {
     private class RpcHandler extends SimpleChannelHandler implements RpcMessage.Visitor {
 
         private final ConcurrentMap<Class<?>, Object> cache = new ConcurrentHashMap<Class<?>, Object> ();
-
+        
+        private Channel channel;
         private NettyRemote remote;
 
         @Override
         public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-            remote = new NettyRemote(ctx.getChannel());
-            clients.addClient(remote);
-            fireClientConnect(remote);
+            channel = ctx.getChannel();
         }
 
         @Override
@@ -163,7 +160,10 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void acceptHandshakeFromClient(HandshakeFromClient msg) {
-            remote.getChannel().write(new HandshakeFromServer(remote.getId()));
+            remote = new NettyRemote(channel, new NettyId(channel.getId()), new HashSet<Class<?>>(Arrays.asList(msg.classes)));
+            channel.write(new HandshakeFromServer(remote.getId(), implementations.keySet()));
+            clients.addClient(remote);
+            fireClientConnect(remote);
         }
 
         @Override
@@ -179,7 +179,7 @@ public class NettyRpcServer implements RpcServer {
                 invokeMethod(msg, clazz, impl);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
-                remote.getChannel().write(new ExceptionNotify(exc));
+                channel.write(new ExceptionNotify(exc));
             }
         }
 
@@ -202,7 +202,7 @@ public class NettyRpcServer implements RpcServer {
             if(provider == null) {
                 throw new RuntimeException("interface is not registered on server: " + clazz.getCanonicalName());
             }
-            return provider.provideFor(remote.getChannel());
+            return provider.provideFor(remote);
         }
 
         @Override

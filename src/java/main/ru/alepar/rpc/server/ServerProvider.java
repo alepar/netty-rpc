@@ -1,9 +1,9 @@
 package ru.alepar.rpc.server;
 
-import org.jboss.netty.channel.Channel;
+import ru.alepar.rpc.api.Remote;
 
 public interface ServerProvider<T> {
     
-    T provideFor(Channel channel);
+    T provideFor(Remote remote);
     
 }
