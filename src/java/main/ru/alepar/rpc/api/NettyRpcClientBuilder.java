@@ -6,10 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import ru.alepar.rpc.client.NettyRpcClient;
 import ru.alepar.rpc.common.Validator;
 
 import static java.util.Collections.unmodifiableMap;
+import static org.jboss.netty.handler.codec.serialization.ClassResolvers.softCachingConcurrentResolver;
 
 public class NettyRpcClientBuilder {
 
@@ -19,6 +21,7 @@ public class NettyRpcClientBuilder {
     private final Map<Class<?>, Object> implementations = new HashMap<Class<?>, Object>();
     private final List<ExceptionListener> listeners = new ArrayList<ExceptionListener>();
 
+    private ClassResolver classResolver = softCachingConcurrentResolver(null);
     private long keepAlivePeriod = 30000l;
 
     /**
@@ -53,15 +56,26 @@ public class NettyRpcClientBuilder {
     }
 
     /**
-     * sets interval at which KeepAlive packets will be sent to server
-     *
-     * setting it to zero will effectively disable KeepAlive
-     * this is not recommended - you most probably will miss abrupt disconnects
+     * sets interval at which KeepAlive packets will be sent to server <br/>
+     *  <br/>
+     * setting it to zero will effectively disable KeepAlive  <br/>
+     * this is not recommended - you most probably will miss abrupt disconnects  <br/>
      * @param keepAlivePeriod interval in milliseconds, if zero - keepAlive will be disabled
      * @return this builder
      */
     public NettyRpcClientBuilder setKeepAlive(long keepAlivePeriod) {
         this.keepAlivePeriod = keepAlivePeriod;
+        return this;
+    }
+
+    /**
+     * sets classResolver that will be used by this RpcClient <br/>
+     * see {@link org.jboss.netty.handler.codec.serialization.ClassResolvers ClassResolvers} for available implementations
+     * @param classResolver to be used, default is {@link org.jboss.netty.handler.codec.serialization.ClassResolvers#softCachingConcurrentResolver(java.lang.ClassLoader) softCachingConcurrentResolver}
+     * @return this builder
+     */
+    public NettyRpcClientBuilder setClassResolver(ClassResolver classResolver) {
+        this.classResolver = classResolver;
         return this;
     }
 
@@ -73,6 +87,7 @@ public class NettyRpcClientBuilder {
                 serverAddress,
                 unmodifiableMap(implementations),
                 listeners.toArray(new ExceptionListener[listeners.size()]),
+                classResolver,
                 keepAlivePeriod
         );
     }

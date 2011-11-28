@@ -23,6 +23,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
@@ -49,8 +50,9 @@ public class NettyRpcServer implements RpcServer {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
-    private final KeepAliveTimer keepAliveTimer;
     private final ClientRepository clients = new ClientRepository();
+    private final ClassResolver classResolver;
+    private final KeepAliveTimer keepAliveTimer;
 
     private final Map<Class<?>, ServerProvider<?>> implementations;
     private final ExceptionListener[] exceptionListeners;
@@ -59,10 +61,11 @@ public class NettyRpcServer implements RpcServer {
     private final ServerBootstrap bootstrap;
     private final Channel acceptChannel;
 
-    public NettyRpcServer(final InetSocketAddress bindAddress, Map<Class<?>, ServerProvider<?>> implementations, ExceptionListener[] exceptionListeners, ClientListener[] clientListeners, final long keepalivePeriod) {
+    public NettyRpcServer(final InetSocketAddress bindAddress, final Map<Class<?>, ServerProvider<?>> implementations, final ExceptionListener[] exceptionListeners, final ClientListener[] clientListeners, final ClassResolver classResolver, final long keepalivePeriod) {
         this.exceptionListeners = exceptionListeners;
         this.clientListeners = clientListeners;
         this.implementations = implementations;
+        this.classResolver = classResolver;
         bootstrap = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
@@ -72,12 +75,12 @@ public class NettyRpcServer implements RpcServer {
             public ChannelPipeline getPipeline() throws Exception {
                 return Channels.pipeline(
                         new ObjectEncoder(),
-                        new ObjectDecoder(),
+                        new ObjectDecoder(classResolver),
                         new RpcHandler());
             }
         });
         
-        keepAliveTimer = new KeepAliveTimer(clients.getClients(), keepalivePeriod);
+        keepAliveTimer = new KeepAliveTimer(this.clients.getClients(), keepalivePeriod);
         acceptChannel = bootstrap.bind(bindAddress);
     }
 
@@ -195,7 +198,7 @@ public class NettyRpcServer implements RpcServer {
         @Override
         public void acceptInvocationRequest(InvocationRequest msg) {
             try {
-                Class<?> clazz = Class.forName(msg.className);
+                Class<?> clazz = classResolver.resolve(msg.className);
                 Object impl = getImplementation(clazz);
                 invokeMethod(msg, impl);
             } catch (Exception exc) {

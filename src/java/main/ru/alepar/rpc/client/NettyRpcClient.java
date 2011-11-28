@@ -19,6 +19,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
@@ -42,21 +43,21 @@ public class NettyRpcClient implements RpcClient {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcClient.class);
 
+    private final ClassResolver classResolver;
     private final KeepAliveTimer keepAliveTimer;
+    private final CountDownLatch latch;
 
     private final Map<Class<?>, Object> implementations;
     private final ExceptionListener[] listeners;
 
     private final ClientBootstrap bootstrap;
-
     private final Channel channel;
     private volatile NettyRemote remote;
 
-    private final CountDownLatch latch;
-
-    public NettyRpcClient(final InetSocketAddress remoteAddress, Map<Class<?>, Object> implementations, ExceptionListener[] listeners, final long keepalivePeriod) {
+    public NettyRpcClient(final InetSocketAddress remoteAddress, final Map<Class<?>, Object> implementations, final ExceptionListener[] listeners, final ClassResolver classResolver, final long keepalivePeriod) {
         this.implementations = implementations;
         this.listeners = listeners;
+        this.classResolver = classResolver;
 
         bootstrap = new ClientBootstrap(
                 new NioClientSocketChannelFactory(
@@ -67,7 +68,7 @@ public class NettyRpcClient implements RpcClient {
             public ChannelPipeline getPipeline() throws Exception {
                 return Channels.pipeline(
                         new ObjectEncoder(),
-                        new ObjectDecoder(),
+                        new ObjectDecoder(classResolver),
                         new RpcHandler());
             }
         });
@@ -142,7 +143,7 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public void acceptInvocationRequest(InvocationRequest msg) {
             try {
-                Class<?> clazz = Class.forName(msg.className);
+                Class<?> clazz = classResolver.resolve(msg.className);
                 Object impl = getImplementation(msg, clazz);
 
                 invokeMethod(msg, impl);

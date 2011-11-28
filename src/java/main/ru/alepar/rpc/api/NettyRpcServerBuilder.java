@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.common.Validator;
@@ -16,6 +17,7 @@ import ru.alepar.rpc.server.ServerProvider;
 import ru.alepar.rpc.server.SimpleServerProvider;
 
 import static java.util.Collections.unmodifiableMap;
+import static org.jboss.netty.handler.codec.serialization.ClassResolvers.softCachingConcurrentResolver;
 
 public class NettyRpcServerBuilder {
 
@@ -26,6 +28,7 @@ public class NettyRpcServerBuilder {
     private final List<ExceptionListener> exceptionListeners = new ArrayList<ExceptionListener>();
     private final List<ClientListener> clientListeners = new ArrayList<ClientListener>();
 
+    private ClassResolver classResolver = softCachingConcurrentResolver(null);
     private long keepAlivePeriod = 30000l;
 
     /**
@@ -131,6 +134,17 @@ public class NettyRpcServerBuilder {
     }
 
     /**
+     * sets classResolver that will be used by this RpcServer <br/>
+     * see {@link org.jboss.netty.handler.codec.serialization.ClassResolvers ClassResolvers} for available implementations
+     * @param classResolver to be used, default is {@link org.jboss.netty.handler.codec.serialization.ClassResolvers#softCachingConcurrentResolver(java.lang.ClassLoader) softCachingConcurrentResolver}
+     * @return this builder
+     */
+    public NettyRpcServerBuilder setClassResolver(ClassResolver classResolver) {
+        this.classResolver = classResolver;
+        return this;
+    }
+
+    /**
      * @return configured RpcServer
      */
     public RpcServer build() {
@@ -139,7 +153,8 @@ public class NettyRpcServerBuilder {
                 unmodifiableMap(implementations), 
                 exceptionListeners.toArray(new ExceptionListener[exceptionListeners.size()]),
                 clientListeners.toArray(new ClientListener[clientListeners.size()]),
+                classResolver,
                 keepAlivePeriod
-        );
+                );
     }
 }
