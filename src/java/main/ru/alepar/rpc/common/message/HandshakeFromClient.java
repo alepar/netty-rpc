@@ -1,13 +1,11 @@
 package ru.alepar.rpc.common.message;
 
-import java.util.Set;
-
 public class HandshakeFromClient extends RpcMessage {
 
-    public final Class<?>[] classes;
+    public final String[] classNames;
 
-    public HandshakeFromClient(Set<Class<?>> classes) {
-        this.classes = classes.toArray(new Class<?>[classes.size()]);
+    public HandshakeFromClient(final String[] classNames) {
+        this.classNames = classNames;
     }
 
     @Override

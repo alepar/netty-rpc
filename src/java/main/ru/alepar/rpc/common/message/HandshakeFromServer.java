@@ -2,16 +2,14 @@ package ru.alepar.rpc.common.message;
 
 import ru.alepar.rpc.api.Remote;
 
-import java.util.Set;
-
 public class HandshakeFromServer extends RpcMessage {
 
     public final Remote.Id clientId;
-    public final Class<?>[] classes;
+    public final String[] classNames;
 
-    public HandshakeFromServer(Remote.Id clientId, Set<Class<?>> classes) {
+    public HandshakeFromServer(final Remote.Id clientId, final String[] classNames) {
         this.clientId = clientId;
-        this.classes = classes.toArray(new Class<?>[classes.size()]);
+        this.classNames = classNames;
     }
 
     @Override

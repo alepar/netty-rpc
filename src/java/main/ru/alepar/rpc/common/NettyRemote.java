@@ -1,16 +1,19 @@
 package ru.alepar.rpc.common;
 
+import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.jboss.netty.channel.Channel;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.exception.ConfigurationException;
 import ru.alepar.rpc.common.message.InvocationRequest;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Set;
-
+import static ru.alepar.rpc.common.Util.foldClassesToStrings;
 import static ru.alepar.rpc.common.Util.toSerializable;
 
 public class NettyRemote implements Remote, Serializable {
@@ -78,7 +81,12 @@ public class NettyRemote implements Remote, Serializable {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), toSerializable(args), method.getParameterTypes()));
+            channel.write(new InvocationRequest(
+                    method.getDeclaringClass().getName(),
+                    method.getName(),
+                    toSerializable(args),
+                    foldClassesToStrings(new HashSet<Class<?>>(Arrays.asList(method.getParameterTypes()))))
+            );
             return null;
         }
 

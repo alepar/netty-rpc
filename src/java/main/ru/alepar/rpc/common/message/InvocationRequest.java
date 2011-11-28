@@ -7,13 +7,13 @@ public class InvocationRequest extends RpcMessage {
     public final String className;
     public final String methodName;
     public final Serializable[] args;
-    public final Class<?>[] types;
+    public final String[] paramClassNames;
 
-    public InvocationRequest(String className, String methodName, Serializable[] args, Class<?>[] types) {
+    public InvocationRequest(final String className, final String methodName, final Serializable[] args, final String[] paramClassNames) {
         this.className = className;
         this.methodName = methodName;
         this.args = args;
-        this.types = types;
+        this.paramClassNames = paramClassNames;
     }
 
     @Override

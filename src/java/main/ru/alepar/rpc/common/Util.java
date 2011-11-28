@@ -1,11 +1,14 @@
 package ru.alepar.rpc.common;
 
-import ru.alepar.rpc.api.exception.ConfigurationException;
-import ru.alepar.rpc.common.message.InvocationRequest;
-
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.jboss.netty.handler.codec.serialization.ClassResolver;
+import ru.alepar.rpc.api.exception.ConfigurationException;
+import ru.alepar.rpc.common.message.InvocationRequest;
 
 public class Util {
 
@@ -20,10 +23,10 @@ public class Util {
         return result;
     }
 
-    public static void invokeMethod(InvocationRequest msg, Object impl) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static void invokeMethod(InvocationRequest msg, Object impl, ClassResolver classResolver) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
         Method method;
         if (msg.args != null) {
-            method = impl.getClass().getMethod(msg.methodName, msg.types);
+            method = impl.getClass().getMethod(msg.methodName, unfoldStringToClasses(classResolver, msg.paramClassNames).toArray(new Class<?>[msg.paramClassNames.length]));
             if(method == null) {
                 throw new ConfigurationException("method is not found in server implementation: " + msg.methodName);
             }
@@ -35,5 +38,22 @@ public class Util {
             }
             method.invoke(impl);
         }
+    }
+
+    public static String[] foldClassesToStrings(Set<Class<?>> classes) {
+        String[] result = new String[classes.size()];
+        int i=0;
+        for (Class<?> clazz : classes) {
+            result[i++] = clazz.getName();
+        }
+        return result;
+    }
+
+    public static Set<Class<?>> unfoldStringToClasses(ClassResolver classResolver, String[] classNames) throws ClassNotFoundException {
+        Set<Class<?>> result = new HashSet<Class<?>>(classNames.length);
+        for (String name : classNames) {
+            result.add(classResolver.resolve(name));
+        }
+        return result;
     }
 }

@@ -1,9 +1,7 @@
 package ru.alepar.rpc.server;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +42,9 @@ import ru.alepar.rpc.common.message.KeepAlive;
 import ru.alepar.rpc.common.message.RpcMessage;
 
 import static java.util.Collections.unmodifiableCollection;
+import static ru.alepar.rpc.common.Util.foldClassesToStrings;
 import static ru.alepar.rpc.common.Util.invokeMethod;
+import static ru.alepar.rpc.common.Util.unfoldStringToClasses;
 
 public class NettyRpcServer implements RpcServer {
 
@@ -184,10 +184,15 @@ public class NettyRpcServer implements RpcServer {
 
         @Override
         public void acceptHandshakeFromClient(HandshakeFromClient msg) {
-            remote = new NettyRemote(channel, new NettyId(channel.getId()), new HashSet<Class<?>>(Arrays.asList(msg.classes)));
-            channel.write(new HandshakeFromServer(remote.getId(), implementations.keySet()));
-            clients.addClient(remote);
-            fireClientConnect(remote);
+            try {
+                remote = new NettyRemote(channel, new NettyId(channel.getId()), unfoldStringToClasses(classResolver, msg.classNames));
+                channel.write(new HandshakeFromServer(remote.getId(), foldClassesToStrings(implementations.keySet())));
+                clients.addClient(remote);
+                fireClientConnect(remote);
+            } catch (ClassNotFoundException e) {
+                log.error("interfaces registered on client side are not in the classpath", e);
+                throw new RuntimeException("interfaces registered on client side are not in the classpath", e);
+            }
         }
 
         @Override
@@ -200,7 +205,7 @@ public class NettyRpcServer implements RpcServer {
             try {
                 Class<?> clazz = classResolver.resolve(msg.className);
                 Object impl = getImplementation(clazz);
-                invokeMethod(msg, impl);
+                invokeMethod(msg, impl, classResolver);
             } catch (Exception exc) {
                 log.error("caught exception while trying to invoke implementation", exc);
                 channel.write(new ExceptionNotify(exc));

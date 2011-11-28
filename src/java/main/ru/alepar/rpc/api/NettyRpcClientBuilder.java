@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import ru.alepar.rpc.client.NettyRpcClient;
+import ru.alepar.rpc.common.PrimitiveTypesClassResolver;
 import ru.alepar.rpc.common.Validator;
 
 import static java.util.Collections.unmodifiableMap;
@@ -87,7 +88,7 @@ public class NettyRpcClientBuilder {
                 serverAddress,
                 unmodifiableMap(implementations),
                 listeners.toArray(new ExceptionListener[listeners.size()]),
-                classResolver,
+                new PrimitiveTypesClassResolver(classResolver),
                 keepAlivePeriod
         );
     }

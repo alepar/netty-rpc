@@ -9,6 +9,7 @@ import java.util.Map;
 import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.common.PrimitiveTypesClassResolver;
 import ru.alepar.rpc.common.Validator;
 import ru.alepar.rpc.server.FactoryServerProvider;
 import ru.alepar.rpc.server.InjectingServerProvider;
@@ -153,7 +154,7 @@ public class NettyRpcServerBuilder {
                 unmodifiableMap(implementations), 
                 exceptionListeners.toArray(new ExceptionListener[exceptionListeners.size()]),
                 clientListeners.toArray(new ClientListener[clientListeners.size()]),
-                classResolver,
+                new PrimitiveTypesClassResolver(classResolver),
                 keepAlivePeriod
                 );
     }
