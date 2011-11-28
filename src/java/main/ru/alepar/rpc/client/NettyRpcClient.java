@@ -12,12 +12,8 @@ import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.exception.TransportException;
 import ru.alepar.rpc.common.NettyRemote;
-import ru.alepar.rpc.common.Util;
 import ru.alepar.rpc.common.message.*;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,7 +28,6 @@ public class NettyRpcClient implements RpcClient {
     private final Logger log = LoggerFactory.getLogger(NettyRpcClient.class);
 
     private final ClientKeepAliveThread keepAliveThread;
-    private final InvocationHandler handler = new ClientProxyHandler();
 
     private final Map<Class<?>, Object> implementations;
     private final ExceptionListener[] listeners;
@@ -90,12 +85,6 @@ public class NettyRpcClient implements RpcClient {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public <T> T getImplementation(Class<T> clazz) {
-        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, handler);
-    }
-
-    @Override
     public Remote getRemote() {
         return remote;
     }
@@ -107,14 +96,6 @@ public class NettyRpcClient implements RpcClient {
             } catch (Exception e) {
                 log.error("exception listener " + listener + " threw exception", exc);
             }
-        }
-    }
-
-    private class ClientProxyHandler implements InvocationHandler {
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            channel.write(new InvocationRequest(method.getDeclaringClass().getName(), method.getName(), Util.toSerializable(args), method.getParameterTypes()));
-            return null;
         }
     }
 

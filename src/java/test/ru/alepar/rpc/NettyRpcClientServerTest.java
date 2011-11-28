@@ -46,7 +46,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
+        final NoParamsVoidReturn proxy = client.getRemote().getProxy(NoParamsVoidReturn.class);
 
         try {
             proxy.go();
@@ -66,7 +66,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final NoParamsIntegerReturn proxy = client.getImplementation(NoParamsIntegerReturn.class);
+        final NoParamsIntegerReturn proxy = client.getRemote().getProxy(NoParamsIntegerReturn.class);
 
         try {
             proxy.go();
@@ -90,7 +90,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
+        final NoParamsVoidReturn proxy = client.getRemote().getProxy(NoParamsVoidReturn.class);
 
         try {
             proxy.go();
@@ -116,7 +116,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final IntegerParam proxy = client.getImplementation(IntegerParam.class);
+        final IntegerParam proxy = client.getRemote().getProxy(IntegerParam.class);
 
         try {
             proxy.go(param);
@@ -142,7 +142,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final IntLongParam proxy = client.getImplementation(IntLongParam.class);
+        final IntLongParam proxy = client.getRemote().getProxy(IntLongParam.class);
 
         try {
             proxy.go(paramInt, paramLong);
@@ -167,7 +167,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final OverloadedString proxy = client.getImplementation(OverloadedString.class);
+        final OverloadedString proxy = client.getRemote().getProxy(OverloadedString.class);
 
         try {
             proxy.go((Serializable) s);
@@ -187,7 +187,7 @@ public class NettyRpcClientServerTest {
                 .build();
 
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS).build();
-        final NonSerializable proxy = client.getImplementation(NonSerializable.class);
+        final NonSerializable proxy = client.getRemote().getProxy(NonSerializable.class);
 
         try {
             proxy.param("", new Object());
@@ -218,7 +218,7 @@ public class NettyRpcClientServerTest {
                 .addExceptionListener(listener)
                 .enableKeepAlive(30l)
                 .build();
-        final InfinteWaiter proxy = client.getImplementation(InfinteWaiter.class);
+        final InfinteWaiter proxy = client.getRemote().getProxy(InfinteWaiter.class);
 
         try {
             proxy.hang();
@@ -251,7 +251,7 @@ public class NettyRpcClientServerTest {
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addExceptionListener(listener)
                 .build();
-        final ThrowableThrower proxy = client.getImplementation(ThrowableThrower.class);
+        final ThrowableThrower proxy = client.getRemote().getProxy(ThrowableThrower.class);
 
         try {
             proxy.go();
@@ -284,7 +284,7 @@ public class NettyRpcClientServerTest {
                 .addObject(ThrowableThrower.class, impl)
                 .build();
 
-        final NoParamsVoidReturn proxy = client.getImplementation(NoParamsVoidReturn.class);
+        final NoParamsVoidReturn proxy = client.getRemote().getProxy(NoParamsVoidReturn.class);
 
         try {
             proxy.go();
@@ -311,8 +311,8 @@ public class NettyRpcClientServerTest {
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(ClientApi.class, mockClient)
                 .build();
-        
-        final SomeServerApi proxy = client.getImplementation(SomeServerApi.class);
+
+        final SomeServerApi proxy = client.getRemote().getProxy(SomeServerApi.class);
 
         try {
             proxy.go(MSG);
@@ -335,8 +335,8 @@ public class NettyRpcClientServerTest {
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientState)
                 .build();
-        
-        final State serverStateProxy = client.getImplementation(State.class);
+
+        final State serverStateProxy = client.getRemote().getProxy(State.class);
 
         try {
             serverStateProxy.set(MSG);
@@ -362,13 +362,13 @@ public class NettyRpcClientServerTest {
         final RpcClient clientOne = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientOneState)
                 .build();
-        final State proxyOne = clientOne.getImplementation(State.class);
+        final State proxyOne = clientOne.getRemote().getProxy(State.class);
 
         final ClientState clientTwoState = new ClientState();
         final RpcClient clientTwo = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addObject(State.class, clientTwoState)
                 .build();
-        final State proxyTwo = clientTwo.getImplementation(State.class);
+        final State proxyTwo = clientTwo.getRemote().getProxy(State.class);
 
         try {
             proxyOne.set(MSG1);

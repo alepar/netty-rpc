@@ -35,7 +35,7 @@ public class NettyRpcBuildersTest {
                 .build();
 
         try {
-            ServerRemote proxy = client.getImplementation(ServerRemote.class);
+            ServerRemote proxy = client.getRemote().getProxy(ServerRemote.class);
             proxy.call();
             giveTimeForMessagesToBeProcessed();
         } finally {
