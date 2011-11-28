@@ -1,7 +1,9 @@
 package ru.alepar.rpc.client;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -82,7 +84,7 @@ public class NettyRpcClient implements RpcClient {
         }
         
         latch = new CountDownLatch(1);
-        channel.write(new HandshakeFromClient(foldClassesToStrings(implementations.keySet())));
+        channel.write(new HandshakeFromClient(foldClassesToStrings(new ArrayList<Class<?>>(implementations.keySet()))));
         try {
             latch.await();
         } catch (InterruptedException e) {
@@ -137,7 +139,7 @@ public class NettyRpcClient implements RpcClient {
         @Override
         public void acceptHandshakeFromServer(HandshakeFromServer msg) {
             try {
-                remote = new NettyRemote(channel, msg.clientId, unfoldStringToClasses(classResolver, msg.classNames));
+                remote = new NettyRemote(channel, msg.clientId, new HashSet<Class<?>>(unfoldStringToClasses(classResolver, msg.classNames)));
             } catch (ClassNotFoundException e) {
                 log.error("interfaces registered on server side are not in the classpath", e);
                 throw new RuntimeException("interfaces registered on server side are not in the classpath", e);

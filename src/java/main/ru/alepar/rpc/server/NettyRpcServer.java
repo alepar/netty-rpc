@@ -1,7 +1,9 @@
 package ru.alepar.rpc.server;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -185,8 +187,8 @@ public class NettyRpcServer implements RpcServer {
         @Override
         public void acceptHandshakeFromClient(HandshakeFromClient msg) {
             try {
-                remote = new NettyRemote(channel, new NettyId(channel.getId()), unfoldStringToClasses(classResolver, msg.classNames));
-                channel.write(new HandshakeFromServer(remote.getId(), foldClassesToStrings(implementations.keySet())));
+                remote = new NettyRemote(channel, new NettyId(channel.getId()), new HashSet<Class<?>>(unfoldStringToClasses(classResolver, msg.classNames)));
+                channel.write(new HandshakeFromServer(remote.getId(), foldClassesToStrings(new ArrayList<Class<?>>(implementations.keySet()))));
                 clients.addClient(remote);
                 fireClientConnect(remote);
             } catch (ClassNotFoundException e) {

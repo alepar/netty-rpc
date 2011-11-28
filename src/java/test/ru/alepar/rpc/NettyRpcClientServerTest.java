@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static ru.alepar.rpc.Config.BIND_ADDRESS;
+import static ru.alepar.rpc.Config.TIMEOUT;
 import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
 
 @RunWith(JMock.class)
@@ -34,7 +35,7 @@ public class NettyRpcClientServerTest {
 
     private final Mockery mockery = new JUnit4Mockery();
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void serverShutdownDoesNotHangIfThereAreStillClientsConnected() throws Exception {
         // it can hang if server does not close client channels before releasing bootstrap resources
         final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS).build();
@@ -44,7 +45,7 @@ public class NettyRpcClientServerTest {
         client.shutdown();
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void invokesMethodsWithNoParamsAndVoidReturnType() throws Exception {
         final NoParamsVoidReturn impl = mockery.mock(NoParamsVoidReturn.class);
 
@@ -68,7 +69,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT, expected = ConfigurationException.class)
+    @Test(timeout = TIMEOUT, expected = ConfigurationException.class)
     public void doNotAllowMethodsWithNonVoidReturnTypeToBeProxied() throws Exception {
         final NoParamsIntegerReturn impl = mockery.mock(NoParamsIntegerReturn.class);
 
@@ -87,7 +88,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void subsequentCallsWork() throws Exception {
         final NoParamsVoidReturn impl = mockery.mock(NoParamsVoidReturn.class);
 
@@ -113,7 +114,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void methodParametersArePassedToRemoteSideProperly() throws Exception {
         final IntegerParam impl = mockery.mock(IntegerParam.class);
         final Integer param = 5;
@@ -138,7 +139,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void primitiveMethodParametersArePassedToRemoteSideProperly() throws Exception {
         final IntLongParam impl = mockery.mock(IntLongParam.class);
         final int paramInt = 5;
@@ -164,7 +165,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void choosesOverloadedMethodByCompileTimeTypesAsOpposedToRuntimeTypes() throws Exception {
         final OverloadedString impl = mockery.mock(OverloadedString.class);
         final String s = "some string";
@@ -189,7 +190,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT, expected = ConfigurationException.class)
+    @Test(timeout = TIMEOUT, expected = ConfigurationException.class)
     public void throwsProtocolExceptionIfCannotSerializeParams() throws Exception {
         final NonSerializable impl = mockery.mock(NonSerializable.class);
 
@@ -208,7 +209,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void throwsTransportExceptionIfConnectionIsAbruptlyTerminated() throws Throwable {
         final InfinteWaiter impl = new InfinteWaiter() {
             @SuppressWarnings({"InfiniteLoopStatement"})
@@ -242,7 +243,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void exceptionsFromServerSideImplementationArePassedToClient() throws Throwable {
         final ThrowableThrower impl = new ThrowableThrower() {
             @Override
@@ -273,7 +274,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void exceptionsFromClientSideImplementationArePassedToServer() throws Throwable {
         final ThrowableThrower impl = new ThrowableThrower() {
             @Override
@@ -306,7 +307,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void feedbackToClientWorks() throws Exception {
         final String MSG = "echoed-hi";
 
@@ -334,7 +335,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void serverImplementationsAreCachedIeStatePersistsAcrossClientCalls() throws Exception {
         final String MSG = "some state";
 
@@ -360,7 +361,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void differentClientsHaveSeparateStateOnServerSide() throws Exception {
         final String MSG1 = "one state";
         final String MSG2 = "second state";
@@ -396,7 +397,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = Config.TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void serverNotifiesAboutClientConnectsAndDisconnects() throws Exception {
         final ClientListener mock = mockery.mock(ClientListener.class);
         final RpcServer server = new NettyRpcServerBuilder(BIND_ADDRESS)

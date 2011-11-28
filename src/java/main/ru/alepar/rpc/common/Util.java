@@ -3,8 +3,8 @@ package ru.alepar.rpc.common;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import ru.alepar.rpc.api.exception.ConfigurationException;
@@ -40,7 +40,7 @@ public class Util {
         }
     }
 
-    public static String[] foldClassesToStrings(Set<Class<?>> classes) {
+    public static String[] foldClassesToStrings(List<Class<?>> classes) {
         String[] result = new String[classes.size()];
         int i=0;
         for (Class<?> clazz : classes) {
@@ -49,8 +49,8 @@ public class Util {
         return result;
     }
 
-    public static Set<Class<?>> unfoldStringToClasses(ClassResolver classResolver, String[] classNames) throws ClassNotFoundException {
-        Set<Class<?>> result = new HashSet<Class<?>>(classNames.length);
+    public static List<Class<?>> unfoldStringToClasses(ClassResolver classResolver, String[] classNames) throws ClassNotFoundException {
+        List<Class<?>> result = new ArrayList<Class<?>>(classNames.length);
         for (String name : classNames) {
             result.add(classResolver.resolve(name));
         }

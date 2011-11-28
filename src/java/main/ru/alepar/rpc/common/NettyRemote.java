@@ -5,7 +5,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.netty.channel.Channel;
@@ -85,7 +84,7 @@ public class NettyRemote implements Remote, Serializable {
                     method.getDeclaringClass().getName(),
                     method.getName(),
                     toSerializable(args),
-                    foldClassesToStrings(new HashSet<Class<?>>(Arrays.asList(method.getParameterTypes()))))
+                    foldClassesToStrings(Arrays.asList(method.getParameterTypes())))
             );
             return null;
         }
