@@ -21,26 +21,50 @@ public class NettyRpcClientBuilder {
 
     private long keepAlivePeriod = 30000l;
 
+    /**
+     * @param serverAddress remote address to connect to
+     */
     public NettyRpcClientBuilder(InetSocketAddress serverAddress) {
         this.serverAddress = serverAddress;
     }
 
+    /**
+     * add object to serve server requests <br/>
+     * all requests will be server by this instance, must not be multithread-safe though <br/>
+     * @param interfaceClass interface that will be exposed on remote side
+     * @param implementingObject object, that will handle all remote invocations
+     * @param <T> interface, all parameters in all methods must be serializable, return type must be void
+     * @return this builder
+     */
     public <T> NettyRpcClientBuilder addObject(Class<T> interfaceClass, T implementingObject) {
         validator.validateInterface(interfaceClass);
         implementations.put(interfaceClass, implementingObject);
         return this;
     }
-    
+
+    /**
+     * this listener will be called if TransportException / RemoteException caught
+     * @param listener to add
+     * @return this builder
+     */
     public NettyRpcClientBuilder addExceptionListener(ExceptionListener listener) {
         listeners.add(listener);
         return this;
-    }    
+    }
 
-    public NettyRpcClientBuilder enableKeepAlive(long millis) {
-        this.keepAlivePeriod = millis;
+    /**
+     * enables sending keepalive packets at given interval
+     * @param keepAlivePeriod interval in milliseconds
+     * @return this builder
+     */
+    public NettyRpcClientBuilder enableKeepAlive(long keepAlivePeriod) {
+        this.keepAlivePeriod = keepAlivePeriod;
         return this;
     }
 
+    /**
+     * @return configured RpcClient
+     */
     public RpcClient build() {
         return new NettyRpcClient(
                 serverAddress,
