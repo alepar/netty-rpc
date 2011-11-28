@@ -1,13 +1,13 @@
 package ru.alepar.rpc.api;
 
-import ru.alepar.rpc.client.NettyRpcClient;
-import ru.alepar.rpc.common.Validator;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import ru.alepar.rpc.client.NettyRpcClient;
+import ru.alepar.rpc.common.Validator;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -53,11 +53,14 @@ public class NettyRpcClientBuilder {
     }
 
     /**
-     * enables sending keepalive packets at given interval
-     * @param keepAlivePeriod interval in milliseconds
+     * sets interval at which KeepAlive packets will be sent to server
+     *
+     * setting it to zero will effectively disable KeepAlive
+     * this is not recommended - you most probably will miss abrupt disconnects
+     * @param keepAlivePeriod interval in milliseconds, if zero - keepAlive will be disabled
      * @return this builder
      */
-    public NettyRpcClientBuilder enableKeepAlive(long keepAlivePeriod) {
+    public NettyRpcClientBuilder setKeepAlive(long keepAlivePeriod) {
         this.keepAlivePeriod = keepAlivePeriod;
         return this;
     }

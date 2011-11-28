@@ -9,7 +9,8 @@ import ru.alepar.rpc.api.NettyRpcServerBuilder;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.RpcServer;
 
-import static ru.alepar.rpc.Config.*;
+import static ru.alepar.rpc.Config.TIMEOUT;
+import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
 
 public class NettyRpcBuildersTest {
 
@@ -27,11 +28,11 @@ public class NettyRpcBuildersTest {
 
         RpcServer server = serverBuilder
                 .addObject(ServerRemote.class, mock)
-                .enableKeepAlive(50l)
+                .setKeepAlive(50l)
                 .build();
 
         RpcClient client = clientBuilder
-                .enableKeepAlive(50l)
+                .setKeepAlive(50l)
                 .build();
 
         try {

@@ -1,22 +1,33 @@
 package ru.alepar.rpc;
 
+import java.io.Serializable;
+
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import ru.alepar.rpc.api.*;
+import ru.alepar.rpc.api.ClientListener;
+import ru.alepar.rpc.api.ExceptionListener;
+import ru.alepar.rpc.api.Inject;
+import ru.alepar.rpc.api.NettyRpcClientBuilder;
+import ru.alepar.rpc.api.NettyRpcServerBuilder;
+import ru.alepar.rpc.api.Remote;
+import ru.alepar.rpc.api.RpcClient;
+import ru.alepar.rpc.api.RpcServer;
 import ru.alepar.rpc.api.exception.ConfigurationException;
 import ru.alepar.rpc.api.exception.RemoteException;
 import ru.alepar.rpc.api.exception.TransportException;
 
-import java.io.Serializable;
-
 import static java.lang.Thread.sleep;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static ru.alepar.rpc.Config.*;
+import static ru.alepar.rpc.Config.BIND_ADDRESS;
+import static ru.alepar.rpc.Config.giveTimeForMessagesToBeProcessed;
 
 @RunWith(JMock.class)
 public class NettyRpcClientServerTest {
@@ -216,7 +227,7 @@ public class NettyRpcClientServerTest {
         final ExceptionSavingListener listener = new ExceptionSavingListener();
         final RpcClient client = new NettyRpcClientBuilder(BIND_ADDRESS)
                 .addExceptionListener(listener)
-                .enableKeepAlive(30l)
+                .setKeepAlive(30l)
                 .build();
         final InfinteWaiter proxy = client.getRemote().getProxy(InfinteWaiter.class);
 

@@ -2,6 +2,7 @@ package ru.alepar.rpc.client;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,7 @@ import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.exception.TransportException;
+import ru.alepar.rpc.common.KeepAliveTimer;
 import ru.alepar.rpc.common.NettyRemote;
 import ru.alepar.rpc.common.message.ExceptionNotify;
 import ru.alepar.rpc.common.message.HandshakeFromClient;
@@ -86,13 +88,12 @@ public class NettyRpcClient implements RpcClient {
             throw new RuntimeException("interrupted waiting for handshake", e);
         }
 
-        keepAliveTimer = new KeepAliveTimer(channel, keepalivePeriod);
-        keepAliveTimer.start();
+        keepAliveTimer = new KeepAliveTimer(Collections.singleton(remote), keepalivePeriod);
     }
 
     @Override
     public void shutdown() {
-        keepAliveTimer.safeInterrupt();
+        keepAliveTimer.stop();
         channel.close().awaitUninterruptibly();
         bootstrap.releaseExternalResources();
     }

@@ -17,8 +17,8 @@ class ClientRepository {
         clients.put(remote.getId(), remote);
     }
 
-    public void removeClient(NettyRemote remote) {
-        clients.remove(remote.getId());
+    public void removeClient(Remote.Id id) {
+        clients.remove(id);
     }
 
     public NettyRemote getClient(Remote.Id clientId) {

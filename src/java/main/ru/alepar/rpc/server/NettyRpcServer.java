@@ -32,6 +32,7 @@ import ru.alepar.rpc.api.ExceptionListener;
 import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcServer;
 import ru.alepar.rpc.api.exception.TransportException;
+import ru.alepar.rpc.common.KeepAliveTimer;
 import ru.alepar.rpc.common.NettyId;
 import ru.alepar.rpc.common.NettyRemote;
 import ru.alepar.rpc.common.message.ExceptionNotify;
@@ -48,7 +49,7 @@ public class NettyRpcServer implements RpcServer {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcServer.class);
 
-    private final ServerKeepAliveThread keepAliveThread;
+    private final KeepAliveTimer keepAliveTimer;
     private final ClientRepository clients = new ClientRepository();
 
     private final Map<Class<?>, ServerProvider<?>> implementations;
@@ -76,14 +77,14 @@ public class NettyRpcServer implements RpcServer {
             }
         });
         
-        keepAliveThread = new ServerKeepAliveThread(clients, keepalivePeriod);
+        keepAliveTimer = new KeepAliveTimer(clients.getClients(), keepalivePeriod);
         acceptChannel = bootstrap.bind(bindAddress);
     }
 
     @Override
     public void shutdown() {
         try {
-            keepAliveThread.safeInterrupt();
+            keepAliveTimer.stop();
 
             // close main channel
             acceptChannel.close().await();
@@ -163,7 +164,7 @@ public class NettyRpcServer implements RpcServer {
         @Override
         public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
             fireClientDisconnect(remote);
-            clients.removeClient(remote);
+            clients.removeClient(remote.getId());
         }
 
         @Override
