@@ -1,8 +1,8 @@
 package ru.alepar.rpc.server;
 
-import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.common.NettyRemote;
 import ru.alepar.rpc.common.message.KeepAlive;
 
 class ServerKeepAliveThread extends Thread {
@@ -25,8 +25,8 @@ class ServerKeepAliveThread extends Thread {
     public void run() {
         try {
             while (!Thread.interrupted()) {
-                for (Channel channel : clients.getChannels()) {
-                    channel.write(new KeepAlive());
+                for (NettyRemote remote : clients.getClients()) {
+                    remote.getChannel().write(new KeepAlive());
                 }
                 Thread.sleep(keepalivePeriod);
             }

@@ -5,16 +5,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.alepar.rpc.common.message.KeepAlive;
 
-class ClientKeepAliveThread extends Thread {
+class KeepAliveTimer extends Thread {
 
-    private final Logger log = LoggerFactory.getLogger(ClientKeepAliveThread.class);
+    private final Logger log = LoggerFactory.getLogger(KeepAliveTimer.class);
 
     private final Channel channel;
     private final long keepalivePeriod;
 
     private volatile boolean safeInterrupt = false;
 
-    public ClientKeepAliveThread(Channel channel, long keepalivePeriod) {
+    public KeepAliveTimer(Channel channel, long keepalivePeriod) {
         setName("KeepAlive-NettyRpcClient");
 
         this.channel = channel;

@@ -1,7 +1,27 @@
 package ru.alepar.rpc.server;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
@@ -14,14 +34,14 @@ import ru.alepar.rpc.api.RpcServer;
 import ru.alepar.rpc.api.exception.TransportException;
 import ru.alepar.rpc.common.NettyId;
 import ru.alepar.rpc.common.NettyRemote;
-import ru.alepar.rpc.common.message.*;
+import ru.alepar.rpc.common.message.ExceptionNotify;
+import ru.alepar.rpc.common.message.HandshakeFromClient;
+import ru.alepar.rpc.common.message.HandshakeFromServer;
+import ru.alepar.rpc.common.message.InvocationRequest;
+import ru.alepar.rpc.common.message.KeepAlive;
+import ru.alepar.rpc.common.message.RpcMessage;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-
+import static java.util.Collections.unmodifiableCollection;
 import static ru.alepar.rpc.common.Util.invokeMethod;
 
 public class NettyRpcServer implements RpcServer {
@@ -70,9 +90,9 @@ public class NettyRpcServer implements RpcServer {
 
             // send close message to all clients
             List<ChannelFuture> futures = new LinkedList<ChannelFuture>();
-            for(Channel c: clients.getChannels()) {
-                if (c.isOpen()) {
-                    futures.add(c.close());
+            for(NettyRemote client: clients.getClients()) {
+                if (client.getChannel().isOpen()) {
+                    futures.add(client.getChannel().close());
                 }
             }
 
@@ -95,7 +115,7 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public Collection<Remote> getClients() {
-        return clients.getClients();
+        return unmodifiableCollection((Collection<? extends Remote>) clients.getClients());
     }
 
     private void fireException(Remote remote, Exception exc) {

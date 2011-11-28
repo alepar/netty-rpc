@@ -1,7 +1,22 @@
 package ru.alepar.rpc.client;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
@@ -12,14 +27,12 @@ import ru.alepar.rpc.api.Remote;
 import ru.alepar.rpc.api.RpcClient;
 import ru.alepar.rpc.api.exception.TransportException;
 import ru.alepar.rpc.common.NettyRemote;
-import ru.alepar.rpc.common.message.*;
-
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
+import ru.alepar.rpc.common.message.ExceptionNotify;
+import ru.alepar.rpc.common.message.HandshakeFromClient;
+import ru.alepar.rpc.common.message.HandshakeFromServer;
+import ru.alepar.rpc.common.message.InvocationRequest;
+import ru.alepar.rpc.common.message.KeepAlive;
+import ru.alepar.rpc.common.message.RpcMessage;
 
 import static ru.alepar.rpc.common.Util.invokeMethod;
 
@@ -27,7 +40,7 @@ public class NettyRpcClient implements RpcClient {
 
     private final Logger log = LoggerFactory.getLogger(NettyRpcClient.class);
 
-    private final ClientKeepAliveThread keepAliveThread;
+    private final KeepAliveTimer keepAliveTimer;
 
     private final Map<Class<?>, Object> implementations;
     private final ExceptionListener[] listeners;
@@ -73,13 +86,13 @@ public class NettyRpcClient implements RpcClient {
             throw new RuntimeException("interrupted waiting for handshake", e);
         }
 
-        keepAliveThread = new ClientKeepAliveThread(channel, keepalivePeriod);
-        keepAliveThread.start();
+        keepAliveTimer = new KeepAliveTimer(channel, keepalivePeriod);
+        keepAliveTimer.start();
     }
 
     @Override
     public void shutdown() {
-        keepAliveThread.safeInterrupt();
+        keepAliveTimer.safeInterrupt();
         channel.close().awaitUninterruptibly();
         bootstrap.releaseExternalResources();
     }
