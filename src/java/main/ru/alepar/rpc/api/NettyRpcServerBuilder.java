@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import org.jboss.netty.handler.codec.serialization.ClassResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.alepar.rpc.common.BossThreadFactory;
 import ru.alepar.rpc.common.PrimitiveTypesClassResolver;
 import ru.alepar.rpc.common.Validator;
+import ru.alepar.rpc.common.WorkerThreadFactory;
 import ru.alepar.rpc.server.FactoryServerProvider;
 import ru.alepar.rpc.server.InjectingServerProvider;
 import ru.alepar.rpc.server.NettyRpcServer;
@@ -18,6 +21,7 @@ import ru.alepar.rpc.server.ServerProvider;
 import ru.alepar.rpc.server.SimpleServerProvider;
 
 import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.jboss.netty.handler.codec.serialization.ClassResolvers.softCachingConcurrentResolver;
 
 public class NettyRpcServerBuilder {
@@ -30,7 +34,9 @@ public class NettyRpcServerBuilder {
     private final List<ClientListener> clientListeners = new ArrayList<ClientListener>();
 
     private ClassResolver classResolver = softCachingConcurrentResolver(null);
-    private long keepAlivePeriod = 30000l;
+    private ExecutorService bossExecutor = newCachedThreadPool(new BossThreadFactory());
+    private ExecutorService workerExecutor = newCachedThreadPool(new WorkerThreadFactory());
+    private long keepAlive = 30000l;
 
     /**
      * @param bindAddress local address to bind to
@@ -126,11 +132,11 @@ public class NettyRpcServerBuilder {
      *
      * setting it to zero will effectively disable KeepAlive
      * this is not recommended - you most probably will miss abrupt disconnects
-     * @param keepAlivePeriod interval in milliseconds, if zero - keepAlive will be disabled
+     * @param interval interval in milliseconds, if zero - keepAlive will be disabled
      * @return this builder
      */
-    public NettyRpcServerBuilder setKeepAlive(long keepAlivePeriod) {
-        this.keepAlivePeriod = keepAlivePeriod;
+    public NettyRpcServerBuilder setKeepAlive(long interval) {
+        this.keepAlive = interval;
         return this;
     }
 
@@ -146,6 +152,25 @@ public class NettyRpcServerBuilder {
     }
 
     /**
+     * set executor, which will take care of all socket.accept() routine
+     * by default, netty takes only one thread from this
+     * default executor is {@link java.util.concurrent.Executors#newCachedThreadPool() newCachedThreadPool}(new {@link ru.alepar.rpc.common.BossThreadFactory BossThreadFactory}())
+     * @param bossExecutor executor to be used as boss
+     */
+    public void setBossExecutor(ExecutorService bossExecutor) {
+        this.bossExecutor = bossExecutor;
+    }
+
+    /**
+     * set executor, which will take care of all remote calls
+     * default executor is {@link java.util.concurrent.Executors#newCachedThreadPool() newCachedThreadPool}(new {@link ru.alepar.rpc.common.WorkerThreadFactory WorkerThreadFactory}())
+     * @param workerExecutor executor to be used as boss
+     */
+    public void setWorkerExecutor(ExecutorService workerExecutor) {
+        this.workerExecutor = workerExecutor;
+    }
+
+    /**
      * @return configured RpcServer
      */
     public RpcServer build() {
@@ -155,7 +180,9 @@ public class NettyRpcServerBuilder {
                 exceptionListeners.toArray(new ExceptionListener[exceptionListeners.size()]),
                 clientListeners.toArray(new ClientListener[clientListeners.size()]),
                 new PrimitiveTypesClassResolver(classResolver),
-                keepAlivePeriod
-                );
+                keepAlive,
+                bossExecutor,
+                workerExecutor
+        );
     }
 }

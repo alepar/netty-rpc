@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -63,15 +63,14 @@ public class NettyRpcServer implements RpcServer {
     private final ServerBootstrap bootstrap;
     private final Channel acceptChannel;
 
-    public NettyRpcServer(final InetSocketAddress bindAddress, final Map<Class<?>, ServerProvider<?>> implementations, final ExceptionListener[] exceptionListeners, final ClientListener[] clientListeners, final ClassResolver classResolver, final long keepalivePeriod) {
+    public NettyRpcServer(final InetSocketAddress bindAddress, final Map<Class<?>, ServerProvider<?>> implementations, final ExceptionListener[] exceptionListeners, final ClientListener[] clientListeners, final ClassResolver classResolver, final long keepalivePeriod, final ExecutorService bossExecutor, final ExecutorService workerExecutor) {
         this.exceptionListeners = exceptionListeners;
         this.clientListeners = clientListeners;
         this.implementations = implementations;
         this.classResolver = classResolver;
         bootstrap = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newCachedThreadPool(),
-                        Executors.newCachedThreadPool()));
+                new NioServerSocketChannelFactory(bossExecutor,workerExecutor)
+        );
 
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() throws Exception {

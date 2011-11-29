@@ -274,7 +274,7 @@ public class NettyRpcClientServerTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    @Test//(timeout = TIMEOUT)
     public void exceptionsFromClientSideImplementationArePassedToServer() throws Throwable {
         final ThrowableThrower impl = new ThrowableThrower() {
             @Override
