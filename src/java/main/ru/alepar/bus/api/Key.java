@@ -18,6 +18,14 @@ public class Key<T extends Message> {
         return clazz;
     }
 
+    public RequestId getId() {
+        return id;
+    }
+
+    public boolean isTemporary() {
+        return id != null;
+    }
+
     public Key<T> deriveRequest() {
         return new Key<T>(clazz, new RequestId());
     }
