@@ -1,4 +1,4 @@
-package ru.alepar.bus;
+package ru.alepar.bus.api;
 
 import java.io.Serializable;
 
